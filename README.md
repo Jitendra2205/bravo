@@ -49,7 +49,7 @@ Run `eval/` to reproduce; numbers below are filled in by `eval/run_eval.py` and 
 
 Requirements: Windows 10 22H2+ or 11, 16 GB RAM, ~40 GB free disk.
 
-1. **Windows side** (PowerShell): `powershell -ExecutionPolicy Bypass -File setup\windows-setup.ps1`
+1. **Windows side:** double-click `setup\Run-Windows-Setup.cmd`
    — checks the machine, installs Ollama, pulls the model, creates `C:\AgentWork`, installs WSL2.
 2. **WSL side** (Ubuntu shell, after the restart): `bash setup/wsl-setup.sh`
    — installs Hermes from the official script, points it at local Ollama, installs the skills and persona.
