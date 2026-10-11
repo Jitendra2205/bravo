@@ -52,7 +52,11 @@ if ($wslReady) {
     Write-Host 'WSL already installed.'
     wsl --shutdown
 } else {
-    Start-Process wsl -ArgumentList '--install' -Verb RunAs -Wait
+    try {
+        Start-Process wsl -ArgumentList '--install' -Verb RunAs -Wait
+    } catch {
+        throw 'WSL install needs your OK: re-run this setup and click Yes on the Windows admin prompt (it can hide behind other windows; check the taskbar).'
+    }
     Write-Host 'Restart Windows if asked, open Ubuntu once to create your user, then run setup/wsl-setup.sh inside it.'
 }
 
