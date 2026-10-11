@@ -1,0 +1,17 @@
+{
+  "_readme": "Starter set. Replace or extend with your own real tasks until you have 25-30. Check types: contains_all, contains_any, not_contains, regex, json_keys, max_words. Matching is case-insensitive.",
+  "tasks": [
+    {"id": "w1", "category": "writing", "prompt": "Write a two-sentence reply declining a meeting on Friday and offering Monday at 11 am instead.", "checks": {"contains_any": ["monday"], "max_words": 60}},
+    {"id": "w2", "category": "writing", "prompt": "Summarise in exactly three bullet points: Our Q3 revenue grew 12% to 4.2 crore. Returns fell from 9% to 6% after we changed packaging. We will add two marketplaces in Q4.", "checks": {"contains_all": ["12%", "6%"], "regex": "^(\\s*[-*•].+\\n?){3}\\s*$"}},
+    {"id": "w3", "category": "writing", "prompt": "Rewrite this to sound professional, keep it under 40 words: 'hey the files r late again, need them by tmrw or we miss the deadline'", "checks": {"contains_any": ["tomorrow"], "not_contains": [" r ", "tmrw"], "max_words": 40}},
+    {"id": "w4", "category": "writing", "prompt": "Give me a subject line (max 8 words) for an email announcing a price increase of 5% from 1 November.", "checks": {"contains_any": ["5%", "price"], "max_words": 10}},
+    {"id": "s1", "category": "structured", "prompt": "Extract as JSON with keys name, date, amount: 'Invoice from Kavya Traders dated 3 Oct 2026 for Rs 18,450.' Reply with JSON only.", "checks": {"json_keys": ["name", "date", "amount"], "contains_all": ["kavya", "18"]}},
+    {"id": "s2", "category": "structured", "prompt": "Classify each line as BUG, FEATURE or QUESTION and reply as JSON mapping the line number to the label: 1) App crashes on login 2) Can you add dark mode? 3) How do I export my data?", "checks": {"json_keys": ["1", "2", "3"], "contains_all": ["bug", "feature", "question"]}},
+    {"id": "s3", "category": "structured", "prompt": "Turn this into a Markdown table with columns Task and Owner: Priya does the deck, Arjun books the venue, Meera sends invites.", "checks": {"contains_all": ["| task", "priya", "arjun", "meera"]}},
+    {"id": "s4", "category": "structured", "prompt": "From this text, list only the dates in ISO format (YYYY-MM-DD), one per line, nothing else: 'Kickoff on 5 Nov 2026, review on 19 November 2026, launch 2 Dec 2026.'", "checks": {"contains_all": ["2026-11-05", "2026-11-19", "2026-12-02"]}},
+    {"id": "h1", "category": "hinglish", "prompt": "Kal subah 9 baje ka reminder banana hai: client ko invoice bhejna. Reply as a single reminder line in the form '- YYYY-MM-DD HH:MM text', assuming today is 2026-10-11.", "checks": {"regex": "2026-10-12\\s+09:00", "contains_any": ["invoice"]}},
+    {"id": "h2", "category": "hinglish", "prompt": "Mujhe is week ke pending kaam ka short summary chahiye, English mein, 3 bullets: report finish karna hai, Rahul ko call karna hai, GST file karna hai.", "checks": {"contains_all": ["report", "rahul", "gst"]}},
+    {"id": "h3", "category": "hinglish", "prompt": "Yeh message polite Hindi mein likho (Devanagari): 'Meeting postpone ho gayi hai, nayi date kal bataunga.'", "checks": {"regex": "[\\u0900-\\u097F]{3,}"}},
+    {"id": "h4", "category": "hinglish", "prompt": "Bhai, 1250 ka 18% GST kitna hoga? Sirf number batao.", "checks": {"contains_any": ["225"]}}
+  ]
+}

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awaaz — a private voice agent for $0</title>
+<meta name="description" content="A private, offline voice agent on a 16 GB laptop, measured against paid cloud agents.">
+<style>
+  :root { --bg:#fbfaf7; --fg:#1d1c1a; --muted:#6b675f; --line:#e4e0d8; --accent:#c2410c; --card:#ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#141311; --fg:#ece9e3; --muted:#a29d93; --line:#2e2b27; --accent:#fb923c; --card:#1c1b18; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:17px/1.6 ui-sans-serif, system-ui, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 16px 80px; }
+  .eyebrow { color:var(--accent); font-weight:600; letter-spacing:.04em; text-transform:uppercase; font-size:13px; }
+  h1 { font-size: clamp(30px, 6vw, 44px); line-height:1.15; margin:8px 0 16px; }
+  h2 { font-size: 22px; margin: 48px 0 12px; }
+  p.lead { font-size: 19px; color: var(--muted); }
+  a { color: var(--accent); }
+  .cta { display:inline-block; margin-top:16px; padding:10px 18px; border-radius:8px; background:var(--accent); color:#fff; text-decoration:none; font-weight:600; }
+  .cta:focus-visible, a:focus-visible { outline: 3px solid var(--fg); outline-offset: 3px; }
+  table { width:100%; border-collapse: collapse; font-size: 15px; }
+  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight:600; }
+  .wrap { overflow-x:auto; }
+  pre { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:16px; overflow-x:auto; font-size:13px; line-height:1.5; }
+  .video { aspect-ratio:16/9; border:1px dashed var(--line); border-radius:8px; display:grid; place-items:center; color:var(--muted); background:var(--card); }
+  footer { margin-top:56px; color:var(--muted); font-size:14px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Case study · Jitendra Singh, AI Product Manager</div>
+  <h1>I replaced $100+ a month of AI agents with a private one that runs on my laptop for $0.</h1>
+  <p class="lead">A voice agent on a 16 GB Windows laptop: offline, sandboxed, and measured against paid cloud models on 30 of my real tasks.</p>
+  <a class="cta" href="https://github.com/YOUR-USERNAME/awaaz">See the repo</a>
+
+  <h2>Demo</h2>
+  <!-- Replace with: <video controls src="demo.mp4" ...> or a YouTube embed -->
+  <div class="video">Demo video coming soon: Wi-Fi off, voice command, real task done.</div>
+
+  <h2>The problem</h2>
+  <p>Always-on agents like ChatGPT dots and Grok Bot cost $100+ a month and live in someone else's cloud. Good dictation is another subscription. I wanted the same habits — talk, delegate, get a morning brief — without the bill or the data leaving my machine.</p>
+
+  <h2>What I chose, and why</h2>
+  <div class="wrap"><table>
+    <tr><th>Option</th><th>Decision</th></tr>
+    <tr><td>Paid cloud agents</td><td>Strongest, but $100+/month and cloud-only</td></tr>
+    <tr><td>Build an agent from scratch</td><td>Months of work open source already did</td></tr>
+    <tr><td>Five existing one-click installers</td><td>A sixth adds nothing; none hardened by default</td></tr>
+    <tr><td><strong>Hermes Agent + Ollama + Whisper</strong></td><td><strong>Chosen.</strong> My work went into security, custom skills and evaluation</td></tr>
+  </table></div>
+
+  <h2>Architecture</h2>
+<pre>You (voice / hotkey / keyboard)
+ ├─ Handy ─ local Whisper ─ types into any app
+ └─ Hermes Agent (WSL2) ─ Whisper in / NeuTTS out
+      ├─ Ollama, localhost only ─ gemma4:e4b
+      └─ Docker sandbox ─ sees one folder
+Optional, off by default: Telegram, Claude/Gemini API</pre>
+
+  <h2>Results</h2>
+  <div class="wrap"><table>
+    <tr><th>Measure</th><th>Local</th><th>Cloud</th></tr>
+    <tr><td>Task success (30 tasks)</td><td>pending</td><td>pending</td></tr>
+    <tr><td>Median seconds per task</td><td>pending</td><td>pending</td></tr>
+    <tr><td>Cost of the full run</td><td>$0</td><td>pending</td></tr>
+    <tr><td>Voice word error rate, English / Hinglish</td><td>pending</td><td>Wispr Flow: pending</td></tr>
+  </table></div>
+  <p>Where local wins and where it loses goes here, honestly.</p>
+
+  <h2>Credits</h2>
+  <p>Built from open-source projects: Hermes Agent (Nous Research), Ollama, Gemma, Whisper, NeuTTS and Handy. I designed and secured the setup, wrote the skills and the evaluation.</p>
+
+  <footer>Jitendra Singh · <a href="https://www.linkedin.com/in/YOUR-PROFILE">LinkedIn</a> · <a href="https://github.com/YOUR-USERNAME/awaaz">GitHub</a></footer>
+</main>
+</body>
+</html>

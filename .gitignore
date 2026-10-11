@@ -1,0 +1,7 @@
+.env
+*.key
+__pycache__/
+# Voice recordings stay private by default
+eval/voice/*.wav
+eval/voice/*.mp3
+eval/voice/*.m4a

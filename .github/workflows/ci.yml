@@ -1,0 +1,15 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m unittest discover eval
+      - run: python skills/daily-brief/brief.py --self-test
+      - run: bash -n setup/wsl-setup.sh
+      - name: No secrets committed
+        run: "! git grep -nE '(sk-[A-Za-z0-9]{20,}|AIza[0-9A-Za-z_-]{30,})'"
