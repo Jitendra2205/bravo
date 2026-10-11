@@ -55,6 +55,7 @@ hermes doctor || true
 cat <<EOF
 
 Done. Next:
+  0. Reload your shell so 'hermes' is found:   source ~/.bashrc   (or open a new Ubuntu window)
   1. Start the agent:       hermes
   2. Turn on voice:         /voice on   (then /voice status)
   3. Set speech providers in ~/.hermes/config.yaml: speech-to-text 'local', text-to-speech 'neutts'
