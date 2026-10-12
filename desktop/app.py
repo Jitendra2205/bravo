@@ -5,9 +5,23 @@ import subprocess
 import sys
 import threading
 import time
+import traceback
 import urllib.error
 import urllib.request
 from pathlib import Path
+
+LOGS = Path(__file__).parent / "logs"
+
+
+def _crash(kind, value, tb):
+    # pythonw has no console, so without this a startup error is invisible
+    LOGS.mkdir(exist_ok=True)
+    with (LOGS / "crash.log").open("a", encoding="utf-8") as f:
+        f.write(time.strftime("%Y-%m-%d %H:%M:%S\n") + "".join(traceback.format_exception(kind, value, tb)) + "\n")
+
+
+sys.excepthook = _crash
+threading.excepthook = lambda a: _crash(a.exc_type, a.exc_value, a.exc_traceback)
 
 import keyboard
 import numpy as np
