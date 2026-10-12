@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: awaaz-case-study
+    name: bravo-case-study
     runtime: static
     staticPublishPath: ./site
     buildCommand: echo "static site, no build"

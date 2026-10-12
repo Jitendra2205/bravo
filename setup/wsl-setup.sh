@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Awaaz - WSL2 (Ubuntu) side setup. Run from the repo root inside Ubuntu:
+# Bravo - WSL2 (Ubuntu) side setup. Run from the repo root inside Ubuntu:
 #   bash setup/wsl-setup.sh [model]
 # Safe to re-run.
 set -euo pipefail
@@ -54,7 +54,7 @@ cp "$REPO_DIR/config/SOUL.md" "$HERMES_HOME/SOUL.md"
 cp -r "$REPO_DIR/skills/"* "$HERMES_HOME/skills/"
 # shortcut: assumes Hermes loads user skills from ~/.hermes/skills; if `hermes` doesn't list daily-brief, check the Hermes skills docs for the current path.
 
-step "Enabling the local agent API for Awaaz Desktop (localhost only)"
+step "Enabling the local agent API for Bravo Desktop (localhost only)"
 ENV_FILE="$HERMES_HOME/.env"
 touch "$ENV_FILE"
 chmod 600 "$ENV_FILE"
@@ -76,5 +76,5 @@ Done. Next:
      (key names per the Hermes voice guide for your version)
   4. Lock it down:          follow config/SECURITY-PRESET.md
   5. Try the skill:         "run my daily brief"
-  6. Desktop app:           double-click desktop\Run-Awaaz.cmd in the awaaz folder on Windows
+  6. Desktop app:           double-click desktop\Run-Bravo.cmd in the bravo folder on Windows
 EOF

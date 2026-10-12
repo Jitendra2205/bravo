@@ -14,9 +14,9 @@ import pill  # noqa: E402
 
 class PillText(unittest.TestCase):
     def test_labels(self):
-        self.assertEqual(pill.label_for("listening", "agent"), "Ask Awaaz")
+        self.assertEqual(pill.label_for("listening", "agent"), "Ask Bravo")
         self.assertEqual(pill.label_for("working", "dictate"), "Transcribing")
-        self.assertEqual(pill.label_for("idle", "dictate"), "Awaaz")
+        self.assertEqual(pill.label_for("idle", "dictate"), "Bravo")
         self.assertEqual(pill.label_for("error", "agent", "No microphone found"), "No microphone found")
         self.assertEqual(pill.hint_for("listening"), "release to finish")
         self.assertEqual(pill.hint_for("done"), "")

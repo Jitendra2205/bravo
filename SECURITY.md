@@ -1,12 +1,12 @@
 # Security model
 
-Awaaz can act on your PC and accounts, so it is designed around one rule: **the model can suggest, but the
+Bravo can act on your PC and accounts, so it is designed around one rule: **the model can suggest, but the
 risky parts need you.**
 
 ## What stays on your PC
 
 - Your voice. Whisper runs locally; audio is never uploaded or saved.
-- History, memory, reminders, scheduled tasks and settings (`%APPDATA%\Awaaz`).
+- History, memory, reminders, scheduled tasks and settings (`%APPDATA%\Bravo`).
 - Quick commands ("open YouTube") never reach any model.
 
 ## What goes online, and only when you set it up
@@ -36,12 +36,12 @@ model, so a malicious page can't run a command or send an email without you.
 
 ## Browser isolation
 
-The agent's Chrome uses its own profile (`%APPDATA%\Awaaz\browser`), separate from your normal browser, its
+The agent's Chrome uses its own profile (`%APPDATA%\Bravo\browser`), separate from your normal browser, its
 saved passwords and its cookies. Log in there only to the sites you want the agent to use.
 
 ## Secrets
 
-API keys and tokens are stored in `%APPDATA%\Awaaz\settings.json` and `google_token.json` on your PC and are
+API keys and tokens are stored in `%APPDATA%\Bravo\settings.json` and `google_token.json` on your PC and are
 never logged. CI blocks commits that contain anything shaped like an API key.
 
 ## Reporting a problem

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Bravo puppy logo">
+  <rect width="128" height="128" rx="30" fill="#F59E0B"/>
+  <!-- floppy ears -->
+  <path d="M30 40c-10 2-16 16-14 34 1 9 9 12 14 6 4-6 6-18 8-30z" fill="#7C4A2D"/>
+  <path d="M98 40c10 2 16 16 14 34-1 9-9 12-14 6-4-6-6-18-8-30z" fill="#7C4A2D"/>
+  <!-- head -->
+  <ellipse cx="64" cy="66" rx="34" ry="32" fill="#FCD9A8"/>
+  <!-- eye patch -->
+  <ellipse cx="80" cy="58" rx="11" ry="12" fill="#C98B5A"/>
+  <!-- eyes -->
+  <circle cx="50" cy="60" r="5.5" fill="#1F1A17"/><circle cx="52" cy="58" r="1.8" fill="#fff"/>
+  <circle cx="78" cy="60" r="5.5" fill="#1F1A17"/><circle cx="80" cy="58" r="1.8" fill="#fff"/>
+  <!-- muzzle -->
+  <ellipse cx="64" cy="80" rx="17" ry="13" fill="#FFF4E6"/>
+  <!-- nose -->
+  <path d="M57 73c0-3 14-3 14 0 0 4-4 7-7 7s-7-3-7-7z" fill="#1F1A17"/>
+  <!-- mouth and tongue -->
+  <path d="M64 80v4M64 84c-3 3-7 3-9 0M64 84c3 3 7 3 9 0" stroke="#1F1A17" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+  <path d="M60 87c0 6 8 6 8 0z" fill="#F472B6"/>
+  <!-- cheeks -->
+  <circle cx="42" cy="76" r="4" fill="#F9A8D4" opacity=".6"/><circle cx="86" cy="76" r="4" fill="#F9A8D4" opacity=".6"/>
+</svg>

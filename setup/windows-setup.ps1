@@ -1,4 +1,4 @@
-# Awaaz - Windows side setup. Run in PowerShell:
+# Bravo - Windows side setup. Run in PowerShell:
 #   powershell -ExecutionPolicy Bypass -File setup\windows-setup.ps1
 # Safe to re-run: every step checks before it acts.
 

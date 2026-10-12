@@ -1,4 +1,4 @@
-"""Awaaz Desktop: hold a key to dictate anywhere, hold another to ask your local Hermes agent. Windows."""
+"""Bravo Desktop: hold a key to dictate anywhere, hold another to ask your local Hermes agent. Windows."""
 import base64
 import io
 import json
@@ -138,7 +138,7 @@ class Engine:
     # ---------- UI bridge
     def emit(self, kind, data=None):
         if self.hub:
-            self.hub.evaluate_js(f"window.Awaaz && Awaaz.emit({json.dumps(kind)}, {json.dumps(data)})")
+            self.hub.evaluate_js(f"window.Bravo && Bravo.emit({json.dumps(kind)}, {json.dumps(data)})")
 
     def pill_state(self, state, mode="dictate", text="", sub=""):
         if self.pill:
@@ -178,8 +178,8 @@ class Engine:
                     if not chat_id:
                         continue
                     if uid != owner:            # private bot: strangers get nothing but this
-                        telegram.send(token, chat_id, "This Awaaz is private. If it's yours, paste this number in "
-                                                      f"Awaaz Settings > Phone > Your Telegram ID: {uid}")
+                        telegram.send(token, chat_id, "This Bravo is private. If it's yours, paste this number in "
+                                                      f"Bravo Settings > Phone > Your Telegram ID: {uid}")
                     elif self.tg_wait is not None:
                         self.tg_wait.put(m.get("text", ""))
                     elif self.tg_running:
@@ -201,7 +201,7 @@ class Engine:
                 text = self.transcribe(str(path))
                 telegram.send(token, chat_id, f"Heard: {text}")
             if text == "/start" or not text:
-                return telegram.send(token, chat_id, "Hi! Send me a message or a voice note, in English, Hindi or Hinglish.")
+                return telegram.send(token, chat_id, "Hi! Send me a message or a voice note, in English or Hindi.")
             telegram.typing(token, chat_id)
 
             def confirm(question):
@@ -233,7 +233,7 @@ class Engine:
         except Exception as e:      # never let one bad message kill the phone link
             core.log(f"telegram turn failed: {e!r}")
             try:
-                telegram.send(token, chat_id, "Something went wrong on the PC. Details are in Awaaz's log.")
+                telegram.send(token, chat_id, "Something went wrong on the PC. Details are in Bravo's log.")
             except OSError:
                 pass
         finally:
@@ -241,7 +241,7 @@ class Engine:
 
     def pc_channel(self):
         def confirm(question):
-            return bool(self.hub and self.hub.create_confirmation_dialog("Awaaz needs your OK", question))
+            return bool(self.hub and self.hub.create_confirmation_dialog("Bravo needs your OK", question))
         return Channel(lambda t: self.emit("chat_delta", t), confirm, progress=lambda t: self.emit("progress", t))
 
     def scheduler(self):
@@ -352,7 +352,7 @@ class Engine:
             return ""
 
     def start_gateway(self):
-        # Runs Hermes' API server inside WSL for as long as Awaaz is open.
+        # Runs Hermes' API server inside WSL for as long as Bravo is open.
         try:
             core.LOG.parent.mkdir(exist_ok=True)
             out = (core.LOG.parent / "hermes-gateway.log").open("a", encoding="utf-8")
@@ -458,7 +458,7 @@ class Engine:
     def system_prompt(self):
         # Date only (no clock time) so the prompt prefix stays identical and Ollama reuses its cache.
         mem = tools.memories()
-        return ("You are Awaaz, a fast private assistant on the owner's laptop. "
+        return ("You are Bravo, a fast private assistant on the owner's laptop. "
                 f"Today is {time.strftime('%A %Y-%m-%d')}. "
                 "Reply in 1-3 short sentences in the owner's language (English, Hindi or Hinglish). "
                 "Use tools for reminders, AgentWork files, opening websites and apps, and searching; "
@@ -468,7 +468,7 @@ class Engine:
         """The screen as a user message with an image (tool results are text-only on most APIs)."""
         from PIL import ImageGrab
         if self.hub:
-            self.hub.minimize()            # show what the owner was looking at, not Awaaz itself
+            self.hub.minimize()            # show what the owner was looking at, not Bravo itself
             time.sleep(0.5)
         try:
             img = ImageGrab.grab(all_screens=True).convert("RGB")
@@ -645,9 +645,9 @@ class Engine:
             if builtin and e.code == 404:
                 msg = f"The model {s['ollama_model']} isn't installed. In PowerShell run: ollama pull {s['ollama_model']}"
             elif e.code == 401:
-                msg = "Hermes rejected the key. Re-run setup/wsl-setup.sh, then restart Awaaz, or switch Settings > Agent engine to Built-in."
+                msg = "Hermes rejected the key. Re-run setup/wsl-setup.sh, then restart Bravo, or switch Settings > Agent engine to Built-in."
             else:
-                msg = f"Agent error {e.code}. Details are in desktop/logs/awaaz.log."
+                msg = f"Agent error {e.code}. Details are in desktop/logs/bravo.log."
             self.emit("chat_error", msg)
             self.pill_flash("error", "agent", "Agent error")
             return
@@ -660,7 +660,7 @@ class Engine:
             return
         except Exception as e:      # never leave the chat box stuck on "typing"
             core.log(f"agent failed: {e!r}")
-            self.emit("chat_error", f"Something went wrong: {e}. Details are in desktop/logs/awaaz.log.")
+            self.emit("chat_error", f"Something went wrong: {e}. Details are in desktop/logs/bravo.log.")
             self.pill_flash("error", "agent", "Agent error")
             return
         core.log(f"reply in {time.monotonic() - started:.1f}s ({'cloud' if self.cloud_on() else s['agent_engine']}, {len(reply)} chars)")
@@ -763,9 +763,9 @@ class Api:
 
 
 def close_previous_copy(pid_file=None):
-    """Only one Awaaz at a time: two copies would both paste every dictation.
+    """Only one Bravo at a time: two copies would both paste every dictation.
     Kills the PID we recorded last time, but only if that PID is still a Python process."""
-    pid_file = Path(pid_file or core.APP_DIR / "awaaz.pid")
+    pid_file = Path(pid_file or core.APP_DIR / "bravo.pid")
     try:
         old = int(pid_file.read_text().strip())
     except (OSError, ValueError):
@@ -775,28 +775,32 @@ def close_previous_copy(pid_file=None):
                                creationflags=NO_WINDOW).stdout.lower()
         if "python" in found:
             subprocess.run(["taskkill", "/F", "/PID", str(old)], capture_output=True, creationflags=NO_WINDOW)
-            core.log(f"closed previous Awaaz (pid {old})")
+            core.log(f"closed previous Bravo (pid {old})")
     pid_file.parent.mkdir(parents=True, exist_ok=True)
     pid_file.write_text(str(os.getpid()))
 
 
 def main():
+    if (core.OLD_APP_DIR / "awaaz.pid").exists():    # a copy still running under the old name
+        close_previous_copy(core.OLD_APP_DIR / "awaaz.pid")
     close_previous_copy()
+    core.migrate_old_data()
+    import ctypes   # own taskbar identity, so Windows shows Bravo's puppy icon instead of Python's
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Bravo.Desktop")
     engine = Engine()
-    # ?v=<mtime> stops WebView2 from showing a cached copy after an update
-    engine.hub = webview.create_window("Awaaz", url=str(UI / "hub.html"), js_api=Api(engine),
+    engine.hub = webview.create_window("Bravo", url=str(UI / "hub.html"), js_api=Api(engine),
                                        width=1040, height=720, min_size=(720, 520))
     engine.pill = Pill()
 
     def on_closed():
-        # shortcut: no tray icon; closing the hub quits Awaaz. Add pystray if you want it to live in the tray.
+        # shortcut: no tray icon; closing the hub quits Bravo. Add pystray if you want it to live in the tray.
         engine.shutdown()
-        core.log("Awaaz closed")
+        core.log("Bravo closed")
         os._exit(0)  # ends the pill, hotkey hooks and background threads together
 
     engine.hub.events.closed += on_closed
-    core.log("Awaaz started")
-    webview.start(engine.boot)
+    core.log("Bravo started")
+    webview.start(engine.boot, icon=str(UI / "bravo.ico"))
     sys.exit(0)
 
 

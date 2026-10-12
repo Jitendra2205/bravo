@@ -1,6 +1,6 @@
 # Credits and third-party licences
 
-Awaaz's own code is MIT-licensed. It does not bundle or modify the projects below; they are installed from
+Bravo's own code is MIT-licensed. It does not bundle or modify the projects below; they are installed from
 their official sources by `pip`, the setup scripts or you.
 
 | Project | Role here | Licence (check the project for the current terms) |

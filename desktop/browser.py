@@ -1,5 +1,5 @@
 """Browser the cloud agent can drive: open, read, click, type. Uses the installed Chrome (or Edge)
-with its own Awaaz profile, so the owner's normal browser profile is never touched.
+with its own Bravo profile, so the owner's normal browser profile is never touched.
 
 Playwright's sync API is bound to the thread that started it, so every call runs on one worker thread.
 """
@@ -9,13 +9,13 @@ import threading
 import core
 
 SNAPSHOT_JS = r"""() => {
-  document.querySelectorAll('[data-awaaz]').forEach(e => e.removeAttribute('data-awaaz'));
+  document.querySelectorAll('[data-bravo]').forEach(e => e.removeAttribute('data-bravo'));
   const sel = 'a[href],button,input:not([type=hidden]),textarea,select,[role=button],[role=link],[role=tab],[role=menuitem],[contenteditable=true]';
   const out = []; let n = 0;
   for (const e of document.querySelectorAll(sel)) {
     const r = e.getBoundingClientRect(), st = getComputedStyle(e);
     if (!r.width || !r.height || st.visibility === 'hidden' || st.display === 'none') continue;
-    e.setAttribute('data-awaaz', ++n);
+    e.setAttribute('data-bravo', ++n);
     const label = (e.getAttribute('aria-label') || e.innerText || e.value || e.placeholder || e.title || e.name || '')
       .trim().replace(/\s+/g, ' ').slice(0, 80);
     out.push(`[${n}] ${e.tagName.toLowerCase()}${e.type ? '(' + e.type + ')' : ''} ${label}`);
@@ -28,7 +28,7 @@ SNAPSHOT_JS = r"""() => {
 SPECS = [
     {"type": "function", "function": {
         "name": "browser_open",
-        "description": "Open a URL in Awaaz's browser window and return the page (text plus numbered clickable elements).",
+        "description": "Open a URL in Bravo's browser window and return the page (text plus numbered clickable elements).",
         "parameters": {"type": "object", "required": ["url"], "properties": {"url": {"type": "string"}}}}},
     {"type": "function", "function": {
         "name": "browser_read",
@@ -112,7 +112,7 @@ class Browser:
                 f"Text:\n{s['text']}\n\nElements:\n{s['els'] or 'none'}")
 
     def _el(self, page, ref):
-        el = page.locator(f'[data-awaaz="{int(ref)}"]').first
+        el = page.locator(f'[data-bravo="{int(ref)}"]').first
         if not el.count():
             raise ValueError(f"No element [{ref}] on this page. Read the page again.")
         return el
@@ -144,7 +144,7 @@ class Browser:
             page = self._ensure(pw)
             el = self._el(page, ref)
             if (el.get_attribute("type") or "").lower() == "password":
-                return "Refused: Awaaz never types passwords. Ask the owner to type it themselves."
+                return "Refused: Bravo never types passwords. Ask the owner to type it themselves."
             el.fill(str(text), timeout=8000)
             if enter:
                 el.press("Enter")

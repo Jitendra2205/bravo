@@ -1,14 +1,26 @@
-"""Awaaz Desktop core: settings, history, text cleanup and agent client. Stdlib only, OS-independent."""
+"""Bravo Desktop core: settings, history, text cleanup and agent client. Stdlib only, OS-independent."""
 import json
 import os
 import re
+import shutil
 import threading
 import time
 import urllib.request
 import uuid
 from pathlib import Path
 
-APP_DIR = Path(os.getenv("AWAAZ_HOME") or Path(os.getenv("APPDATA") or Path.home()) / "Awaaz")
+APP_DIR = Path(os.getenv("BRAVO_HOME") or Path(os.getenv("APPDATA") or Path.home()) / "Bravo")
+OLD_APP_DIR = APP_DIR.with_name("Awaaz")      # the app's earlier name
+
+
+def migrate_old_data():
+    """Bravo was called Awaaz: copy its settings, history, memory and browser profile once. The old folder stays."""
+    if os.getenv("BRAVO_HOME") or not OLD_APP_DIR.is_dir() or (APP_DIR / "settings.json").exists():
+        return
+    try:
+        shutil.copytree(OLD_APP_DIR, APP_DIR, dirs_exist_ok=True)
+    except OSError as e:   # e.g. a browser lock file in use; everything else is still copied
+        log(f"copied old Awaaz data with some files skipped: {str(e)[:200]}")
 
 DEFAULTS = {
     "dictate_hotkey": "right ctrl",
@@ -33,16 +45,16 @@ DEFAULTS = {
     "google_client_secret": "",
     "telegram_token": "",              # phone chat: bot token from @BotFather
     "telegram_user": "",               # the only Telegram user id the bot answers
-    "dictionary": {"hermes": "Hermes", "awaz": "Awaaz", "olama": "Ollama"},
+    "dictionary": {"hermes": "Hermes", "olama": "Ollama"},
 }
 
-LOG = Path(__file__).parent / "logs" / "awaaz.log"
+LOG = Path(__file__).parent / "logs" / "bravo.log"
 # Telegram bot tokens, Google/OpenAI/Groq-style keys and bearer tokens never reach the log file.
 SECRET_RE = re.compile(r"\d{6,}:[\w-]{30,}|\b(?:AIza|AQ\.|sk-|gsk_|ya29\.)[\w.-]{16,}|Bearer\s+[\w.-]+")
 
 
 def log(msg):
-    """Append a timestamped line to desktop/logs/awaaz.log (kept small: trimmed past 1 MB)."""
+    """Append a timestamped line to desktop/logs/bravo.log (kept small: trimmed past 1 MB)."""
     try:
         LOG.parent.mkdir(exist_ok=True)
         if LOG.exists() and LOG.stat().st_size > 1_000_000:

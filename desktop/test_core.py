@@ -43,6 +43,22 @@ class Core(unittest.TestCase):
         self.assertNotIn("AAHdq", text); self.assertNotIn("AIzaSy", text); self.assertNotIn("sk-proj", text)
         self.assertNotIn("ya29", text); self.assertIn("ok", text)
 
+    def test_old_awaaz_data_is_copied_once(self):
+        import tempfile
+        from unittest import mock
+        root = Path(tempfile.mkdtemp())
+        (root / "Awaaz").mkdir()
+        (root / "Awaaz" / "settings.json").write_text('{"cloud_model": "m"}')
+        with mock.patch.object(core, "APP_DIR", root / "Bravo"), mock.patch.object(core, "OLD_APP_DIR", root / "Awaaz"), \
+                mock.patch.dict("os.environ", {}, clear=False) as env:
+            env.pop("BRAVO_HOME", None)
+            core.migrate_old_data()
+            self.assertEqual(core.load_settings(root / "Bravo" / "settings.json")["cloud_model"], "m")
+            (root / "Awaaz" / "settings.json").write_text('{"cloud_model": "changed"}')
+            core.migrate_old_data()                                   # never overwrites Bravo's own settings
+            self.assertEqual(core.load_settings(root / "Bravo" / "settings.json")["cloud_model"], "m")
+        self.assertTrue((root / "Awaaz").is_dir())                    # old folder kept
+
     def test_clean_text(self):
         d = {"hermes": "Hermes"}
         self.assertEqual(core.clean_text("um so uh open hermes , please", d), "So open Hermes, please")

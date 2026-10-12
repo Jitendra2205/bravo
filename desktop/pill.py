@@ -11,7 +11,7 @@ BG, INK, MUTED = "#161412", "#f4f1ec", "#a39d93"
 ACCENT = {"dictate": "#fb923c", "agent": "#a78bfa"}
 STATE_COLOR = {"done": "#4ade80", "error": "#f87171", "idle": "#6b665e"}
 LABELS = {
-    ("listening", "dictate"): "Dictating", ("listening", "agent"): "Ask Awaaz",
+    ("listening", "dictate"): "Dictating", ("listening", "agent"): "Ask Bravo",
     ("working", "dictate"): "Transcribing", ("working", "agent"): "Thinking",
     ("done", "dictate"): "Pasted", ("done", "agent"): "Reply ready",
     ("error", "dictate"): "Something went wrong", ("error", "agent"): "Something went wrong",
@@ -24,7 +24,7 @@ def label_for(state, mode, text=""):
     if text:
         return text
     if state == "idle":
-        return "Awaaz"
+        return "Bravo"
     return LABELS.get((state, mode), "")
 
 

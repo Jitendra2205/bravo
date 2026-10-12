@@ -106,8 +106,8 @@ def google_connect(client_id, client_secret, timeout=300):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write("<h2>Awaaz is connected. You can close this tab.</h2>".encode()
-                             if "code" in got else b"<h2>Not connected. Try again from Awaaz.</h2>")
+            self.wfile.write("<h2>Bravo is connected. You can close this tab.</h2>".encode()
+                             if "code" in got else b"<h2>Not connected. Try again from Bravo.</h2>")
 
         def log_message(self, *a):
             pass
@@ -135,7 +135,7 @@ def google_connect(client_id, client_secret, timeout=300):
 
 def _access():
     if not GOOGLE_TOKEN.exists():
-        raise ValueError("Gmail and Calendar aren't connected. Open Awaaz Settings > Google and press Connect.")
+        raise ValueError("Gmail and Calendar aren't connected. Open Bravo Settings > Google and press Connect.")
     tok = json.loads(GOOGLE_TOKEN.read_text(encoding="utf-8"))
     if time.time() > tok.get("expires_at", 0):
         fresh = _form("https://oauth2.googleapis.com/token", {

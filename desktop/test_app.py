@@ -50,7 +50,7 @@ class FakeWindow:
 
 class FakeModel:
     def transcribe(self, audio, **kw):
-        return [types.SimpleNamespace(text=" um send the invoice to awaz team")], None
+        return [types.SimpleNamespace(text=" um send the invoice to olama team")], None
 
 
 class EngineTest(unittest.TestCase):
@@ -77,12 +77,12 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(sent, ["ctrl+v"])
         self.assertEqual(clip["v"], "old clipboard")            # clipboard restored after paste
         h = self.e.history.list()
-        self.assertEqual(h[0]["text"], "Send the invoice to Awaaz team")
+        self.assertEqual(h[0]["text"], "Send the invoice to Ollama team")
         self.assertTrue(self.events("history_added"))
 
     def test_agent_voice_goes_to_hub(self):
         self.e.handle("agent", np.zeros(16000, dtype="float32"), 2.5)
-        self.assertIn("Send the invoice to Awaaz team", self.events("voice_ask")[0])
+        self.assertIn("Send the invoice to Ollama team", self.events("voice_ask")[0])
         self.assertEqual(self.e.voice_secs, 2.5)
 
     def test_builtin_agent_runs_tool_then_answers(self):
@@ -121,7 +121,7 @@ class EngineTest(unittest.TestCase):
         turns = iter([
             {"role": "assistant", "content": "", "extra_content": {"sig": "x"},
              "tool_calls": [{"id": "c1", "function": {"name": "browser_open", "arguments": '{"url": "news.ycombinator.com"}'}}]},
-            {"role": "assistant", "content": "Top story is about Awaaz."},
+            {"role": "assistant", "content": "Top story is about Bravo."},
         ])
         sent_msgs = []
         def fake_cloud(url, key, model, msgs, tools_, **kw):
@@ -131,7 +131,7 @@ class EngineTest(unittest.TestCase):
         self.e.browser = fake_browser
         with mock.patch.object(core, "cloud_chat", fake_cloud):
             self.e.chat([{"role": "user", "content": "HN pe top story kya hai"}])
-        self.assertEqual(self.e.history.list()[0]["reply"], "Top story is about Awaaz.")
+        self.assertEqual(self.e.history.list()[0]["reply"], "Top story is about Bravo.")
         second = sent_msgs[1]
         self.assertEqual(second[-2]["extra_content"], {"sig": "x"})        # provider extras sent back
         self.assertEqual(second[-1], {"role": "tool", "tool_call_id": "c1", "content": "PAGE browser_open news.ycombinator.com"})
@@ -251,7 +251,7 @@ class EngineTest(unittest.TestCase):
                 mock.patch.object(threading, "Thread", lambda target, args, daemon: types.SimpleNamespace(start=lambda: target(*args))):
             with self.assertRaises(SystemExit):
                 self.e.telegram_loop()
-        self.assertIn("This Awaaz is private", sent[0][1])
+        self.assertIn("This Bravo is private", sent[0][1])
         self.assertIn("222", sent[0][1])                              # stranger only learns their own id
         self.assertEqual(sent[1], (5, "Opened https://www.youtube.com"))
         self.assertEqual(self.e.history.list()[0]["text"], "[Phone] YouTube kholo")
@@ -284,7 +284,7 @@ class EngineTest(unittest.TestCase):
             calls.append(cmd[0])
             out = "notepad.exe 4242" if cmd[0] == "tasklist" else ""
             return types.SimpleNamespace(stdout=out)
-        pid = Path(self.tmp.name) / "awaaz.pid"
+        pid = Path(self.tmp.name) / "bravo.pid"
         pid.write_text("4242")
         with mock.patch.object(app.subprocess, "run", fake_run):
             app.close_previous_copy(pid)

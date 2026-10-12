@@ -10,7 +10,7 @@ from pathlib import Path
 
 import core
 
-WORKSPACE = Path(os.getenv("AWAAZ_WORKSPACE") or r"C:\AgentWork")
+WORKSPACE = Path(os.getenv("BRAVO_WORKSPACE") or r"C:\AgentWork")
 _BRIEF = Path(__file__).resolve().parents[1] / "skills" / "daily-brief" / "brief.py"
 
 SITES = {"youtube": "https://www.youtube.com", "gmail": "https://mail.google.com", "google": "https://www.google.com",
@@ -71,7 +71,7 @@ def _safe(name):
 
 
 def daily_brief(today=None):
-    spec = importlib.util.spec_from_file_location("awaaz_brief", _BRIEF)
+    spec = importlib.util.spec_from_file_location("bravo_brief", _BRIEF)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     WORKSPACE.mkdir(parents=True, exist_ok=True)

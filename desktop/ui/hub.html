@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Awaaz</title>
+<title>Bravo</title>
+<link rel="icon" href="bravo-logo.svg">
 <style>
   :root {
     --bg: #faf8f5; --side: #f2eee8; --card: #ffffff; --ink: #1c1a17; --muted: #5f5a52; --line: #e6e0d6;
@@ -60,7 +61,7 @@
   .icon-btn { border: 0; background: transparent; color: var(--muted); width: 32px; height: 32px; border-radius: 7px; display: grid; place-items: center; cursor: pointer; transition: background 150ms, color 150ms; }
   .icon-btn:hover { background: var(--bg); color: var(--ink); }
   .empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); }
-  .btn { border: 1px solid var(--line); background: var(--card); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: background 150ms; min-height: 38px; }
+  .btn { white-space: nowrap; border: 1px solid var(--line); background: var(--card); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: background 150ms; min-height: 38px; }
   .btn:hover { background: var(--bg); }
   .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
   .btn.primary:hover { filter: brightness(1.06); }
@@ -110,8 +111,8 @@
 <div class="app">
   <aside>
     <div class="brand">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 11v2"/></svg>
-      Awaaz
+      <img src="bravo-logo.svg" alt="" width="32" height="32">
+      Bravo
     </div>
     <nav aria-label="Main">
       <button data-page="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
@@ -129,13 +130,13 @@
 
   <main>
     <section id="home">
-      <h1 id="greet">Namaste</h1>
+      <h1 id="greet">Hello</h1>
       <p class="sub">Speak anywhere on your PC. Your voice is transcribed on this laptop.</p>
       <div class="keys">
         <div class="keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
           <div><b>Dictate anywhere</b><small>Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. Text appears where your cursor is.</small></div></div>
         <div class="keycard agent"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div><b>Ask your agent</b><small>Hold <kbd id="k-agent">Right Alt</kbd> and ask. Awaaz answers here and out loud.</small></div></div>
+          <div><b>Ask your agent</b><small>Hold <kbd id="k-agent">Right Alt</kbd> and ask. Bravo answers here and out loud.</small></div></div>
       </div>
       <h2>Your numbers</h2>
       <div class="stats">
@@ -156,16 +157,16 @@
       <div class="thread" id="thread" aria-live="polite"></div>
       <div class="chips" id="chips">
         <button class="chip">Run my daily brief</button>
-        <button class="chip">Kal subah 9 baje invoice bhejne ka reminder lagao</button>
+        <button class="chip">Remind me to send the invoice tomorrow at 9 am</button>
         <button class="chip">Summarise the newest file in my AgentWork folder</button>
-        <button class="chip">YouTube kholo</button>
-        <button class="chip">YouTube pe lofi music search karo</button>
-        <button class="chip">Mere screen pe kya hai?</button>
-        <button class="chip">Har weekday subah 9 baje mujhe top AI news ka summary do</button>
+        <button class="chip">Open YouTube</button>
+        <button class="chip">Search YouTube for lofi music</button>
+        <button class="chip">What's on my screen?</button>
+        <button class="chip">Every weekday at 9 am, give me a summary of the top AI news</button>
       </div>
       <form class="composer" id="composer">
         <label for="msg" class="sr" style="position:absolute;left:-9999px">Message</label>
-        <textarea id="msg" rows="1" placeholder="Message Awaaz… (Enter to send, Shift+Enter for a new line)"></textarea>
+        <textarea id="msg" rows="1" placeholder="Message Bravo… (Enter to send, Shift+Enter for a new line)"></textarea>
         <button class="send" id="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
       </form>
     </section>
@@ -183,7 +184,7 @@
 
     <section id="dictionary" hidden>
       <h1>Dictionary</h1>
-      <p class="sub">Words Awaaz should always spell your way: names, brands, Hinglish terms.</p>
+      <p class="sub">Words Bravo should always spell your way: names, brands, Hindi words.</p>
       <div class="form">
         <div class="dict-row" style="color:var(--muted);font-size:13px;font-weight:600"><span>When I say</span><span>Write</span><span></span></div>
         <div id="dict" class="list"></div>
@@ -207,7 +208,7 @@
         </div>
         <div class="two">
           <div class="field"><label for="whisper_model">Speech model</label>
-            <select id="whisper_model"><option value="base">Base (fastest)</option><option value="small">Small (balanced)</option><option value="medium">Medium (best Hinglish, slower)</option></select>
+            <select id="whisper_model"><option value="base">Base (fastest)</option><option value="small">Small (balanced)</option><option value="medium">Medium (best for Hindi, slower)</option></select>
             <span class="help">Downloads once, then works offline.</span></div>
           <div class="field"><label for="language">Language</label>
             <select id="language"><option value="auto">Auto-detect</option><option value="en">English</option><option value="hi">Hindi</option></select></div>
@@ -380,7 +381,7 @@ document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', ()
 $('#new-chat').addEventListener('click', () => { chat = []; streaming = null; setBusy(false); $('#thread').replaceChildren(); $('#chips').hidden = false; api().stop_speaking(); });
 
 // ---- events pushed from Python
-window.Awaaz = {
+window.Bravo = {
   emit(type, data) {
     if (type === 'progress' && streaming) streaming.dataset.progress = data;
     if (type === 'chat_delta' && streaming) { delete streaming.dataset.progress; streaming.textContent += data; streaming.scrollIntoView({ block: 'end' }); }
@@ -402,16 +403,16 @@ async function boot() {
   if (b.google) $('#google-status').textContent = 'Connected';
   renderList($('#recent'), b.history.slice(0, 5), 'Your dictations and questions will show up here.');
   const h = new Date().getHours(); $('#greet').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
-  Awaaz.emit('status', b.status);
+  Bravo.emit('status', b.status);
 }
 window.addEventListener('pywebviewready', boot);
 // Browser preview without the Python app: a fake API with sample data.
 setTimeout(() => { if (!window.pywebview) { window.pywebview = { api: window.__mockApi() }; boot(); } }, 300);
 window.__mockApi = () => {
-  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', image_model: '', google_client_id: '', google_client_secret: '', telegram_token: '', telegram_user: '', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
+  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', image_model: '', google_client_id: '', google_client_secret: '', telegram_token: '', telegram_user: '', dictionary: { hermes: 'Hermes', anouk: 'Anouk' } };
   const hist = [
     { id: 'a', ts: now - 300, mode: 'dictate', words: 19, text: 'Hi Priya, sharing the revised invoice for October. Please confirm the GST number before Friday.' },
-    { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Kal subah 9 baje invoice bhejne ka reminder lagao', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },
+    { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Remind me to send the invoice tomorrow at 9 am', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },
     { id: 'c', ts: now - 7200, mode: 'dictate', words: 12, text: 'Meeting notes: launch moved to Monday, labels to be printed by Saturday.' },
   ];
   return {
@@ -420,7 +421,7 @@ window.__mockApi = () => {
     list_history: async (q) => hist.filter((e) => !q || e.text.toLowerCase().includes(q.toLowerCase())),
     delete_history: async () => true, clear_history: async () => true, copy_text: async () => true, stop_speaking: async () => true,
     save_settings: async (s) => (settings = s), connect_google: async () => 'Google connected (preview)',
-    send_chat: async () => { const words = 'You have one reminder today: send the invoice to Kavya Traders at 9 am.'.split(' '); let i = 0; const t = setInterval(() => { if (i < words.length) Awaaz.emit('chat_delta', (i ? ' ' : '') + words[i++]); else { clearInterval(t); Awaaz.emit('chat_done'); } }, 60); },
+    send_chat: async () => { const words = 'You have one reminder today: send the invoice to Kavya Traders at 9 am.'.split(' '); let i = 0; const t = setInterval(() => { if (i < words.length) Bravo.emit('chat_delta', (i ? ' ' : '') + words[i++]); else { clearInterval(t); Bravo.emit('chat_done'); } }, 60); },
   };
 };
 </script>
