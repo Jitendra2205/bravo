@@ -196,6 +196,8 @@ def cloud_chat(url, key, model, messages, tools=None, timeout=120):
     payload = {"model": model, "messages": messages}
     if tools:
         payload["tools"] = tools
+    if "generativelanguage.googleapis.com" in url:
+        payload["reasoning_effort"] = "low"     # Gemini: less thinking per step, much faster agent loops
     with _post(url.rstrip("/") + "/chat/completions", payload, key, timeout) as r:
         msg = json.load(r)["choices"][0]["message"]
     msg.setdefault("content", "")

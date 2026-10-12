@@ -11,6 +11,7 @@ import threading
 import time
 import traceback
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -45,7 +46,8 @@ UI = Path(__file__).parent / "ui"
 CLOUD_RULES = (
     "You can act for the owner: reminders, AgentWork files, opening apps, and a real browser window "
     "(browser_* tools) to search, read websites, click and type. Work step by step: open a page, read its "
-    "numbered elements, then click or type by [ref]. Prefer direct URLs such as https://www.google.com/search?q=... "
+    "numbered elements, then click or type by [ref]. To search the web open https://html.duckduckgo.com/html/?q=... "
+    "(fast, no pop-ups); open a result only when its snippet isn't enough. Answer as soon as you have enough. "
     "The browser_* window IS Chrome: when the owner says 'open Chrome and search/find/check...', use browser_open, "
     "not open_app. For anything current (latest, news, prices, rankings, 'top' lists, today's facts) search with "
     "browser_open and answer from what the pages say, never from memory. "
@@ -70,8 +72,22 @@ CLOUD_TOOLS = ([t for t in tools.SPECS if t["function"]["name"] not in ("open_we
 class Channel:
     """Where one agent turn talks to: the PC window or the owner's phone."""
 
-    def __init__(self, say, confirm, pc=True):
+    def __init__(self, say, confirm, pc=True, progress=None):
         self.say, self.confirm, self.pc, self.files = say, confirm, pc, []
+        self.progress = progress or (lambda text: None)
+
+
+def progress_text(name, args):
+    """Short live status for the chat while a tool runs, e.g. 'Opening duckduckgo.com'."""
+    if name == "browser_open":
+        try:
+            a = json.loads(args) if isinstance(args, str) else (args or {})
+            return "Opening " + (urllib.parse.urlparse(a.get("url", "")).netloc or a.get("url", "page"))
+        except (ValueError, AttributeError):
+            pass
+    return {"browser_read": "Reading the page", "browser_click": "Clicking", "browser_type": "Typing",
+            "browser_back": "Going back", "look_at_screen": "Looking at your screen", "run_command": "Running a command",
+            "generate_image": "Making the image"}.get(name, name.replace("_", " ").capitalize())
 
 
 class CloudError(Exception):
@@ -226,7 +242,7 @@ class Engine:
     def pc_channel(self):
         def confirm(question):
             return bool(self.hub and self.hub.create_confirmation_dialog("Awaaz needs your OK", question))
-        return Channel(lambda t: self.emit("chat_delta", t), confirm)
+        return Channel(lambda t: self.emit("chat_delta", t), confirm, progress=lambda t: self.emit("progress", t))
 
     def scheduler(self):
         """Proactive side: announce timed reminders and run scheduled tasks when they come due."""
@@ -403,7 +419,9 @@ class Engine:
 
     def handle(self, mode, audio, secs):
         try:
+            t = time.monotonic()
             text = self.transcribe(audio)
+            core.log(f"transcribed {secs:.1f}s of speech in {time.monotonic() - t:.1f}s")
         except Exception as e:
             core.log(f"transcription failed: {e!r}")
             self.pill_flash("error", mode, "Transcription failed")
@@ -546,6 +564,7 @@ class Engine:
                 name = c.get("function", {}).get("name", "")
                 args = c.get("function", {}).get("arguments") or "{}"
                 self.pill_state("working", "agent", "Working", name.replace("_", " "))
+                ch.progress(progress_text(name, args))
                 if name == "look_at_screen":
                     try:
                         images.append(self.screenshot_message())
@@ -565,6 +584,10 @@ class Engine:
                 else:
                     result = tools.run(name, args)
                 core.log(f"cloud tool {name} -> {str(result)[:120]!r}")
+                if str(result).startswith("PAGE ("):    # keep only the newest page in full: smaller, faster model calls
+                    for m in msgs:
+                        if m.get("role") == "tool" and m["content"].startswith("PAGE (") and len(m["content"]) > 600:
+                            m["content"] = m["content"][:500] + "\n…(older page trimmed)"
                 msgs.append({"role": "tool", "tool_call_id": c.get("id", ""), "content": str(result)})
             msgs += images
         reply = "I stopped after 25 steps. Tell me how to continue."

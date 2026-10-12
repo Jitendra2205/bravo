@@ -136,6 +136,24 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(second[-2]["extra_content"], {"sig": "x"})        # provider extras sent back
         self.assertEqual(second[-1], {"role": "tool", "tool_call_id": "c1", "content": "PAGE browser_open news.ycombinator.com"})
 
+    def test_older_pages_are_trimmed_and_progress_is_shown(self):
+        self.cloud()
+        open_call = lambda i, url: {"role": "assistant", "content": "", "tool_calls": [
+            {"id": f"c{i}", "function": {"name": "browser_open", "arguments": json.dumps({"url": url})}}]}
+        turns = iter([open_call(1, "https://html.duckduckgo.com/html/?q=ai"), open_call(2, "https://lmarena.ai"),
+                      {"role": "assistant", "content": "Done."}])
+        sent = []
+        def fake_cloud(url, key, model, msgs, tools_, **kw):
+            sent.append([m.get("content") for m in msgs if m.get("role") == "tool"])
+            return next(turns)
+        self.e.browser = types.SimpleNamespace(run=lambda name, args: "PAGE (untrusted)\n" + args["url"] + "x" * 5000)
+        with mock.patch.object(core, "cloud_chat", fake_cloud):
+            self.e.chat([{"role": "user", "content": "top AI models"}])
+        last = sent[-1]
+        self.assertTrue(last[0].endswith("(older page trimmed)"))
+        self.assertGreater(len(last[1]), 5000)                       # newest page kept whole
+        self.assertIn("Opening html.duckduckgo.com", " ".join(self.events("progress")))
+
     def test_cloud_rate_limit_message(self):
         self.cloud()
         def limited(*a, **k):

@@ -77,6 +77,7 @@
   .msg.bot { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
   .msg.err { border-color: var(--err); color: var(--err); }
   .typing::after { content: "▍"; animation: blink 1s steps(1) infinite; }
+  .typing[data-progress]::before { content: attr(data-progress) "…"; display: block; color: var(--muted); font-size: 13px; }
   @keyframes blink { 50% { opacity: 0; } }
   .composer { display: flex; gap: 10px; align-items: flex-end; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 14px; }
   .composer textarea { flex: 1; border: 0; background: transparent; resize: none; outline: none; max-height: 140px; padding: 6px 0; }
@@ -368,7 +369,7 @@ async function ask(text) {
   text = text.trim(); if (!text || streaming) return;
   show('agent'); $('#chips').hidden = true;
   chat.push({ role: 'user', content: text }); bubble('user', text);
-  streaming = bubble('bot', ''); streaming.classList.add('typing'); setBusy(true);
+  streaming = bubble('bot', ''); streaming.classList.add('typing'); streaming.dataset.progress = 'Thinking'; setBusy(true);
   await api().send_chat(chat);
 }
 $('#composer').addEventListener('submit', (ev) => { ev.preventDefault(); const t = $('#msg').value; $('#msg').value = ''; autosize(); ask(t); });
@@ -381,7 +382,8 @@ $('#new-chat').addEventListener('click', () => { chat = []; streaming = null; se
 // ---- events pushed from Python
 window.Awaaz = {
   emit(type, data) {
-    if (type === 'chat_delta' && streaming) { streaming.textContent += data; streaming.scrollIntoView({ block: 'end' }); }
+    if (type === 'progress' && streaming) streaming.dataset.progress = data;
+    if (type === 'chat_delta' && streaming) { delete streaming.dataset.progress; streaming.textContent += data; streaming.scrollIntoView({ block: 'end' }); }
     if (type === 'chat_done' && streaming) { streaming.classList.remove('typing'); chat.push({ role: 'assistant', content: streaming.textContent }); streaming = null; setBusy(false); refreshStats(); }
     if (type === 'chat_error') { if (streaming) { streaming.classList.remove('typing'); streaming.classList.add('err'); streaming.textContent = data; streaming = null; } setBusy(false); }
     if (type === 'voice_ask') ask(data);
