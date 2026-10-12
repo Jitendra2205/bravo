@@ -115,5 +115,51 @@ class OpenToolsTest(unittest.TestCase):
         self.assertIn("Error: Not a website", tools.run("open_website", {"url": "javascript:alert(1)"}))
 
 
+class AgentFeaturesTest(unittest.TestCase):
+    def setUp(self):
+        self.tmp = Path(tempfile.mkdtemp())
+        self.p = [mock.patch.object(tools, "MEMORY", self.tmp / "memory.md"),
+                  mock.patch.object(tools, "TASKS", self.tmp / "tasks.json"),
+                  mock.patch.object(tools, "ALERTED", self.tmp / "alerted.json"),
+                  mock.patch.object(tools, "WORKSPACE", self.tmp / "ws")]
+        for p in self.p:
+            p.start()
+
+    def tearDown(self):
+        for p in self.p:
+            p.stop()
+
+    def test_memory_remember_and_forget(self):
+        tools.run("remember", {"fact": "Prefers  Hinglish replies"})
+        tools.run("remember", {"fact": "Works on Parakh"})
+        self.assertEqual(tools.memories(), "- Prefers Hinglish replies\n- Works on Parakh")
+        self.assertEqual(tools.run("forget", {"text": "parakh"}), "Forgot 1 memory line(s).")
+        self.assertEqual(tools.memories(), "- Prefers Hinglish replies")
+
+    def test_write_file_never_overwrites_silently_or_escapes(self):
+        self.assertIn("Saved notes/plan.md", tools.run("write_file", {"name": "notes/plan.md", "text": "v1"}))
+        self.assertIn("already exists", tools.run("write_file", {"name": "notes/plan.md", "text": "v2"}))
+        tools.run("write_file", {"name": "notes/plan.md", "text": "v2", "overwrite": True})
+        self.assertEqual((self.tmp / "ws/notes/plan.md").read_text(), "v2")
+        self.assertIn("outside the AgentWork", tools.run("write_file", {"name": "../evil.txt", "text": "x"}))
+
+    def test_scheduled_tasks_run_once_or_repeat(self):
+        tools.run("schedule_task", {"at": "2026-10-16 09:00", "prompt": "AI news", "repeat": "weekdays"})
+        tools.run("schedule_task", {"at": "2026-10-16 18:00", "prompt": "call mom"})
+        self.assertEqual(tools.due_tasks(dt.datetime(2026, 10, 16, 8, 59)), [])
+        self.assertEqual(tools.due_tasks(dt.datetime(2026, 10, 16, 9, 0)), ["AI news"])   # Friday
+        self.assertIn("2026-10-19 09:00 (weekdays) AI news", tools.list_tasks())          # skips the weekend
+        self.assertEqual(tools.due_tasks(dt.datetime(2026, 10, 16, 18, 5)), ["call mom"])
+        self.assertNotIn("call mom", tools.list_tasks())                                   # one-off removed
+        self.assertIn("repeat must be", tools.run("schedule_task", {"at": "2026-10-16 09:00", "prompt": "x", "repeat": "hourly"}))
+
+    def test_timed_reminders_announced_once(self):
+        (self.tmp / "ws").mkdir()
+        (self.tmp / "ws/reminders.md").write_text("- 2026-10-13 09:00 Invoice bhejna\n- 2026-10-13 Untimed\n- 2026-10-01 09:00 Old one\n")
+        now = dt.datetime(2026, 10, 13, 9, 0, 30)
+        self.assertEqual(tools.due_reminders(now), ["Invoice bhejna"])
+        self.assertEqual(tools.due_reminders(now), [])
+
+
 if __name__ == "__main__":
     unittest.main()

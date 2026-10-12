@@ -65,6 +65,7 @@ A small Windows app on top of the agent: a floating pill at the bottom of the sc
 - **Hub:** stats (words, speaking speed, minutes saved), agent chat, searchable history, a custom dictionary, and settings (hotkeys, speech model, language, AI polish).
 - **Instant commands, no model:** "open YouTube", "notepad kholo", "daily brief" run in under a second, fully offline.
 - **Local-first, cloud optional:** with no key, the agent runs on Gemma via Ollama. Add any OpenAI-compatible key in Settings (Gemini free tier, Groq, OpenRouter, OpenAI, Claude) and bigger tasks go to that model, which can drive a real browser window: open pages, read them, click and type. Speech, history and quick commands never leave the PC.
+- **Agent features (with a cloud key):** remembers facts about you across chats, looks at your screen when asked, writes files in AgentWork, reads and fills your clipboard, schedules tasks ("every weekday 9 AM, top AI news"), and announces timed reminders out loud. New chat stops a long task.
 - **Browser guardrails:** it uses its own Chrome profile, never types passwords, labels page text as untrusted, and asks before anything that sends, posts, buys or submits.
 - Start it by double-clicking `desktop\Run-Awaaz.cmd`.
 

@@ -148,7 +148,7 @@
     <section id="agent" hidden>
       <div class="row" style="justify-content:space-between;margin-bottom:8px">
         <div><h1>Agent</h1><p class="sub" style="margin:0">Your private agent, running on this laptop. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
-        <button class="btn" id="new-chat">New chat</button>
+        <button class="btn" id="new-chat" title="Starts over and stops a running task">New chat</button>
       </div>
       <div class="thread" id="thread" aria-live="polite"></div>
       <div class="chips" id="chips">
@@ -157,6 +157,8 @@
         <button class="chip">Summarise the newest file in my AgentWork folder</button>
         <button class="chip">YouTube kholo</button>
         <button class="chip">YouTube pe lofi music search karo</button>
+        <button class="chip">Mere screen pe kya hai?</button>
+        <button class="chip">Har weekday subah 9 baje mujhe top AI news ka summary do</button>
       </div>
       <form class="composer" id="composer">
         <label for="msg" class="sr" style="position:absolute;left:-9999px">Message</label>
@@ -357,6 +359,7 @@ window.Awaaz = {
     if (type === 'chat_done' && streaming) { streaming.classList.remove('typing'); chat.push({ role: 'assistant', content: streaming.textContent }); streaming = null; setBusy(false); refreshStats(); }
     if (type === 'chat_error') { if (streaming) { streaming.classList.remove('typing'); streaming.classList.add('err'); streaming.textContent = data; streaming = null; } setBusy(false); }
     if (type === 'voice_ask') ask(data);
+    if (type === 'notify') { bubble('bot', data); toast(data); }
     if (type === 'history_added') { refreshStats(); api().list_history('').then((h) => renderList($('#recent'), h.slice(0, 5), '')); }
     if (type === 'status') {
       if ('mic' in data) { $('#st-mic').textContent = data.mic; $('#led-mic').className = 'led ' + (data.micOk ? 'on' : data.micOk === false ? 'off' : ''); }

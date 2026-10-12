@@ -161,6 +161,35 @@ class EngineTest(unittest.TestCase):
             self.e.chat([{"role": "user", "content": "YouTube kholo"}])
         self.assertEqual(self.e.history.list()[0]["reply"], "Opened https://www.youtube.com")
 
+    def test_cloud_look_at_screen_sends_image_and_memory_in_prompt(self):
+        self.cloud()
+        turns = iter([{"role": "assistant", "content": "", "tool_calls": [{"id": "s1", "function": {"name": "look_at_screen", "arguments": "{}"}}]},
+                      {"role": "assistant", "content": "It's a Python error."}])
+        sent_msgs = []
+        def fake_cloud(url, key, model, msgs, tools_, **kw):
+            sent_msgs.append(list(msgs))
+            return next(turns)
+        shot = {"role": "user", "content": [{"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,AA"}}]}
+        with mock.patch.object(core, "cloud_chat", fake_cloud), mock.patch.object(app.tools, "memories", lambda: "- Name is Jitendra"), \
+                mock.patch.object(self.e, "screenshot_message", lambda: shot):
+            self.e.chat([{"role": "user", "content": "mere screen pe kya hai"}])
+        self.assertIn("Name is Jitendra", sent_msgs[0][0]["content"])
+        self.assertEqual(sent_msgs[1][-1], shot)                         # image follows the tool result
+        self.assertEqual(sent_msgs[1][-2]["role"], "tool")
+
+    def test_new_chat_stops_a_long_task(self):
+        self.cloud()
+        calls = []
+        def looping(*a, **k):
+            calls.append(1)
+            self.e.cancel = True                                          # owner pressed New chat mid-task
+            return {"role": "assistant", "content": "", "tool_calls": [{"id": "x", "function": {"name": "list_tasks", "arguments": "{}"}}]}
+        with mock.patch.object(core, "cloud_chat", looping):
+            self.e.chat([{"role": "user", "content": "do 20 things"}])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(self.e.history.list()[0]["reply"], "Stopped.")
+        self.assertFalse(self.e.busy)
+
     def test_brief_fast_path_skips_the_model(self):
         def must_not_call(*a, **k):
             raise AssertionError("model should not be called for the brief")
