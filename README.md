@@ -43,7 +43,8 @@ Telegram from your phone. As a bonus, the same hotkey gives you free, private di
 
 1. Download this repo (green **Code** button → Download ZIP) and unzip it.
 2. Double-click `desktop\Run-Bravo.cmd`. The first run installs Python packages (about 300 MB) and starts
-   the app.
+   the app. It also puts a **Bravo** shortcut with the puppy icon on your Desktop and in the Start menu:
+   right-click it and choose **Pin to taskbar**, then open Bravo from there.
 3. **Make it fast (recommended, free):** get a free key at [console.groq.com](https://console.groq.com/keys),
    then in Bravo go to **Settings → Cloud model**, choose **Groq**, paste the key and press **Save**.
 4. **Optional fully offline brain:** install [Ollama](https://ollama.com/download) and Bravo downloads the

@@ -793,7 +793,7 @@ def main():
     close_previous_copy()
     core.migrate_old_data()
     import ctypes   # own taskbar identity, so Windows shows Bravo's puppy icon instead of Python's
-    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Bravo.Desktop")
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("Bravo.Desktop")   # same ID as Make-Shortcut.ps1
     engine = Engine()
     engine.hub = webview.create_window("Bravo", url=str(UI / "hub.html"), js_api=Api(engine),
                                        width=1040, height=720, min_size=(720, 520))

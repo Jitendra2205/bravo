@@ -23,5 +23,7 @@ rem A venv created without pip (seen on some Windows Python installs) gets pip a
 )
 echo Checking Bravo components (first run downloads about 300 MB)...
 .venv\Scripts\python.exe -m pip install --disable-pip-version-check -q -r requirements.txt || (echo Install failed. Check your internet connection and try again. & pause & exit /b 1)
+rem Desktop and Start menu shortcuts with the puppy icon (right-click one to pin it to the taskbar).
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0Make-Shortcut.ps1" 1>NUL 2>NUL
 echo Starting Bravo...
 start "" .venv\Scripts\pythonw.exe app.py
