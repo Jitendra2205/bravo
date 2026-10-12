@@ -6,15 +6,14 @@
 <style>
   :root { --bg: rgba(22, 20, 18, 0.94); --edge: rgba(255, 255, 255, 0.12); --ink: #f4f1ec; --muted: #b8b1a6;
           --dictate: #fb923c; --agent: #a78bfa; --ok: #4ade80; --err: #f87171; }
-  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
+  html, body { margin: 0; height: 100%; background: #161412; overflow: hidden;
                font: 500 13px/1 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; user-select: none; }
-  .wrap { height: 100%; display: grid; place-items: center; }
-  .pill { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 12px; border-radius: 999px;
-          background: var(--bg); border: 1px solid var(--edge); color: var(--ink);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); transition: opacity 180ms ease, transform 180ms ease; }
-  .pill.idle { opacity: 0.55; height: 10px; padding: 0; width: 48px; gap: 0; }
-  .pill.idle > * { display: none; }
-  .pill.hidden { opacity: 0; transform: translateY(8px); }
+  .wrap { height: 100%; }
+  /* The window itself is the bar (Windows can't always draw transparent windows). */
+  .pill { display: flex; align-items: center; justify-content: center; gap: 10px; height: 100%; padding: 0 14px;
+          background: var(--bg); color: var(--ink); border: 1px solid var(--edge); box-sizing: border-box; }
+  .pill.idle { color: var(--muted); }
+  .pill.idle .dot { background: var(--muted); }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent, var(--dictate)); flex: none; }
   .listening .dot { animation: pulse 1.2s ease-in-out infinite; }
   .bars { display: flex; align-items: center; gap: 3px; height: 22px; }
@@ -33,7 +32,7 @@
 </head>
 <body>
 <div class="wrap">
-  <div id="pill" class="pill idle" role="status" aria-live="polite">
+  <div id="pill" class="pill" role="status" aria-live="polite">
     <span id="icon" class="dot"></span>
     <span id="bars" class="bars" aria-hidden="true"></span>
     <span id="label" class="label"></span>
@@ -58,13 +57,14 @@
       done: mode === 'agent' ? 'Reply ready' : 'Pasted',
       error: 'Something went wrong',
     };
-    label.textContent = text || defaults[state] || '';
-    hint.textContent = sub || (state === 'listening' ? 'release to finish' : '');
+    label.textContent = text || defaults[state] || (state === 'idle' ? 'Awaaz' : '');
+    hint.textContent = sub || (state === 'listening' ? 'release to finish' : state === 'idle' ? 'hold your key to talk' : '');
     if (state !== 'listening') history.fill(0), draw();
   };
 
   // Called from Python ~20x/second with mic level 0..1
   window.setLevel = (v) => { history.shift(); history.push(Math.min(1, v * 6)); draw(); };
+  setState({ state: 'idle' });
   function draw() { bars.childNodes.forEach((b, i) => { b.style.height = `${4 + history[i] * 18}px`; }); }
 </script>
 </body>

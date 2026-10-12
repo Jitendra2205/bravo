@@ -1,5 +1,6 @@
 """Awaaz Desktop: hold a key to dictate anywhere, hold another to ask your local Hermes agent. Windows."""
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -373,21 +374,25 @@ class Api:
 
 
 def main():
+    # Only one Awaaz at a time: two copies would both paste every dictation.
+    subprocess.run(["taskkill", "/F", "/FI", "WINDOWTITLE eq Awaaz pill"], capture_output=True, creationflags=NO_WINDOW)
     engine = Engine()
     engine.hub = webview.create_window("Awaaz", url=str(UI / "hub.html"), js_api=Api(engine),
                                        width=1040, height=720, min_size=(720, 520))
     screen = webview.screens[0]
-    w, h = 340, 64
+    w, h = 300, 40
     engine.pill = webview.create_window("Awaaz pill", url=str(UI / "pill.html"), width=w, height=h,
-                                        x=(screen.width - w) // 2, y=screen.height - h - 72,
-                                        frameless=True, on_top=True, transparent=True, focus=False)
+                                        x=(screen.width - w) // 2, y=screen.height - h - 64,
+                                        frameless=True, on_top=True, focus=False, background_color="#161412")
 
     def on_closed():
         # shortcut: no tray icon; closing the hub quits Awaaz. Add pystray if you want it to live in the tray.
         engine.shutdown()
-        engine.pill.destroy()
+        core.log("Awaaz closed")
+        os._exit(0)  # ends the pill, hotkey hooks and background threads together
 
     engine.hub.events.closed += on_closed
+    core.log("Awaaz started")
     webview.start(engine.boot)
     sys.exit(0)
 
