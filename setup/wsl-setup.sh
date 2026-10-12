@@ -10,6 +10,8 @@ REPO_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 HERMES_HOME="$HOME/.hermes"
 
 step() { printf '\n==> %s\n' "$1"; }
+# Hermes and uv install into these; a shell opened before install won't have them on PATH yet.
+export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 
 step "Checking that WSL can reach Ollama on Windows"
 if ! curl -fsS "$OLLAMA_URL/api/tags" >/dev/null; then
@@ -28,7 +30,6 @@ if command -v hermes >/dev/null 2>&1; then
 else
   # Official URL from github.com/NousResearch/hermes-agent. Read it first: curl -fsSL <url> | less
   curl -fsSL https://hermes-agent.nousresearch.com/install.sh | bash
-  export PATH="$HOME/.local/bin:$PATH"
 fi
 
 step "Pointing Hermes at local Ollama"
@@ -37,6 +38,10 @@ hermes config set model.base_url "$OLLAMA_URL/v1"
 hermes config set model.default "$MODEL"
 
 step "Installing voice support (local Whisper speech-to-text)"
+if ! command -v uv >/dev/null 2>&1; then
+  # Official uv installer (astral.sh), used by Hermes for its Python packages.
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
 if [ -d "$HERMES_HOME/hermes-agent" ]; then
   (cd "$HERMES_HOME/hermes-agent" && uv pip install -e ".[voice]")
 else
