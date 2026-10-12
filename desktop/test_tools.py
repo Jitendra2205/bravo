@@ -85,5 +85,35 @@ class Tools(unittest.TestCase):
         self.assertEqual(core.ollama_root("http://localhost:11434/v1/"), "http://localhost:11434")
 
 
+class OpenToolsTest(unittest.TestCase):
+    def setUp(self):
+        self.opened = []
+        self.p = [mock.patch.object(tools.webbrowser, "open", self.opened.append),
+                  mock.patch.object(tools.os, "startfile", self.opened.append, create=True)]
+        for p in self.p:
+            p.start()
+
+    def tearDown(self):
+        for p in self.p:
+            p.stop()
+
+    def test_quick_open_in_english_and_hinglish(self):
+        self.assertEqual(tools.quick("Open YouTube"), "Opened https://www.youtube.com")
+        self.assertEqual(tools.quick("notepad kholo"), "Opened notepad")
+        self.assertEqual(tools.quick("open flipkart.com"), "Opened https://flipkart.com")
+        self.assertEqual(self.opened, ["https://www.youtube.com", "notepad.exe", "https://flipkart.com"])
+
+    def test_quick_leaves_real_questions_to_the_model(self):
+        self.assertIsNone(tools.quick("open the newest file and summarise it"))
+        self.assertIsNone(tools.quick("kal 9 baje reminder lagao"))
+        self.assertEqual(self.opened, [])
+
+    def test_search_and_allowlist(self):
+        self.assertEqual(tools.run("web_search", {"query": "lofi beats", "site": "youtube"}), "Searched YouTube for lofi beats")
+        self.assertEqual(self.opened, ["https://www.youtube.com/results?search_query=lofi+beats"])
+        self.assertIn("Error: I can open", tools.run("open_app", {"name": "cmd.exe /c del *"}))
+        self.assertIn("Error: Not a website", tools.run("open_website", {"url": "javascript:alert(1)"}))
+
+
 if __name__ == "__main__":
     unittest.main()

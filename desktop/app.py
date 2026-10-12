@@ -278,7 +278,8 @@ class Engine:
         return ("You are Awaaz, a fast private assistant on the owner's laptop. "
                 f"Today is {time.strftime('%A %Y-%m-%d')}. "
                 "Reply in 1-3 short sentences in the owner's language (English, Hindi or Hinglish). "
-                "Use tools for reminders and AgentWork files; never invent file contents.")
+                "Use tools for reminders, AgentWork files, opening websites and apps, and searching; "
+                "never invent file contents.")
 
     def prime(self):
         """Run the instructions + tool list through the model once, so Ollama caches them.
@@ -294,6 +295,10 @@ class Engine:
         last = messages[-1]["content"] if messages else ""
         if BRIEF_RE.search(last):          # fast path: no model call needed to read a file
             reply = brief_summary(tools.run("daily_brief", {}))
+            self.emit("chat_delta", reply)
+            return reply
+        if (reply := tools.quick(last)) is not None:   # "open youtube": no model needed
+            core.log(f"quick -> {reply!r}")
             self.emit("chat_delta", reply)
             return reply
         msgs = [{"role": "system", "content": self.system_prompt()}] + messages
@@ -315,8 +320,8 @@ class Engine:
                 result = tools.run(fn.get("name"), fn.get("arguments"))
                 core.log(f"tool {fn.get('name')} -> {result[:120]!r}")
                 msgs.append({"role": "tool", "content": result, "tool_name": fn.get("name")})
-            # A saved reminder needs no second model pass on a CPU: confirm it directly (~half the wait).
-            if all(c.get("function", {}).get("name") == "add_reminder" for c in calls):
+            # A finished action needs no second model pass on a CPU: confirm it directly (~half the wait).
+            if all(c.get("function", {}).get("name") in tools.ACTIONS for c in calls):
                 done = " ".join(m["content"].replace("Added:", "Reminder set:") for m in msgs[-len(calls):])
                 self.emit("chat_delta", done)
                 return reply + done
