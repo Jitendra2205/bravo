@@ -23,6 +23,11 @@ DEFAULTS = {
     "agent_key": "",
     "ollama_url": "http://localhost:11434/v1",
     "ollama_model": "gemma4:e4b",
+    # Optional cloud brain: any OpenAI-compatible API (Gemini, OpenAI, Claude, Groq, OpenRouter...).
+    # Empty key = everything stays local.
+    "cloud_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "cloud_key": "",
+    "cloud_model": "gemini-flash-latest",
     "dictionary": {"hermes": "Hermes", "awaz": "Awaaz", "olama": "Ollama"},
 }
 
@@ -178,6 +183,19 @@ def chat_stream(base_url, key, messages, model="hermes-agent", timeout=600):
                 continue
             if delta:
                 yield delta
+
+
+def cloud_chat(url, key, model, messages, tools=None, timeout=120):
+    """One non-streaming turn against an OpenAI-compatible API. Returns the assistant message dict
+    (kept whole, so provider extras such as Gemini's thought signatures go back on the next turn)."""
+    payload = {"model": model, "messages": messages}
+    if tools:
+        payload["tools"] = tools
+    with _post(url.rstrip("/") + "/chat/completions", payload, key, timeout) as r:
+        msg = json.load(r)["choices"][0]["message"]
+    msg.setdefault("content", "")
+    msg["content"] = msg["content"] or ""
+    return msg
 
 
 def ollama_root(url):

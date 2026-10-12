@@ -1,4 +1,5 @@
 """Engine logic with the Windows-only pieces (keyboard, mic, webview, Whisper) stubbed out."""
+import io
 import json
 import sys
 import tempfile
@@ -111,6 +112,54 @@ class EngineTest(unittest.TestCase):
             self.assertIn("- 2026-10-13 09:00 Send invoice", (Path(ws) / "reminders.md").read_text())
         self.assertEqual(len(calls), 1)
         self.assertEqual(self.e.history.list()[0]["reply"], "Reminder set: 2026-10-13 09:00 Send invoice")
+
+    def cloud(self):
+        self.e.settings.update(cloud_key="k", cloud_url="https://api.example/v1", cloud_model="m")
+
+    def test_cloud_runs_browser_steps_and_keeps_raw_messages(self):
+        self.cloud()
+        turns = iter([
+            {"role": "assistant", "content": "", "extra_content": {"sig": "x"},
+             "tool_calls": [{"id": "c1", "function": {"name": "browser_open", "arguments": '{"url": "news.ycombinator.com"}'}}]},
+            {"role": "assistant", "content": "Top story is about Awaaz."},
+        ])
+        sent_msgs = []
+        def fake_cloud(url, key, model, msgs, tools_, **kw):
+            sent_msgs.append(list(msgs))
+            return next(turns)
+        fake_browser = types.SimpleNamespace(run=lambda name, args: f"PAGE {name} {args['url']}")
+        self.e.browser = fake_browser
+        with mock.patch.object(core, "cloud_chat", fake_cloud):
+            self.e.chat([{"role": "user", "content": "HN pe top story kya hai"}])
+        self.assertEqual(self.e.history.list()[0]["reply"], "Top story is about Awaaz.")
+        second = sent_msgs[1]
+        self.assertEqual(second[-2]["extra_content"], {"sig": "x"})        # provider extras sent back
+        self.assertEqual(second[-1], {"role": "tool", "tool_call_id": "c1", "content": "PAGE browser_open news.ycombinator.com"})
+
+    def test_cloud_rate_limit_message(self):
+        self.cloud()
+        def limited(*a, **k):
+            raise urllib.error.HTTPError("u", 429, "slow down", {}, io.BytesIO(b"quota"))
+        with mock.patch.object(core, "cloud_chat", limited):
+            self.e.chat([{"role": "user", "content": "find flights"}])
+        self.assertIn("rate limit", self.events("chat_error")[-1])
+
+    def test_cloud_offline_falls_back_to_local(self):
+        self.cloud()
+        def offline(*a, **k):
+            raise urllib.error.URLError("no internet")
+        with mock.patch.object(core, "cloud_chat", offline), \
+                mock.patch.object(core, "ollama_chat_stream", lambda *a, **k: iter([("delta", "local answer")])):
+            self.e.chat([{"role": "user", "content": "hello"}])
+        self.assertEqual(self.e.history.list()[0]["reply"], "local answer")
+
+    def test_quick_commands_never_reach_the_cloud(self):
+        self.cloud()
+        def must_not(*a, **k):
+            raise AssertionError("cloud called")
+        with mock.patch.object(core, "cloud_chat", must_not), mock.patch.object(app.tools.webbrowser, "open", lambda u: None):
+            self.e.chat([{"role": "user", "content": "YouTube kholo"}])
+        self.assertEqual(self.e.history.list()[0]["reply"], "Opened https://www.youtube.com")
 
     def test_brief_fast_path_skips_the_model(self):
         def must_not_call(*a, **k):

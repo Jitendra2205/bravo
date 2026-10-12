@@ -61,9 +61,12 @@ Requirements: Windows 10 22H2+ or 11, 16 GB RAM, ~40 GB free disk.
 A small Windows app on top of the agent: a floating pill at the bottom of the screen and a hub window.
 
 - **Hold Right Ctrl** anywhere: speak, release, and the text is typed where your cursor is (local Whisper, filler words removed, your custom spellings applied).
-- **Hold Right Alt**: ask your Hermes agent by voice; the answer streams into the hub and is read aloud with the offline Windows voice.
+- **Hold Right Alt**: ask your agent by voice; the answer streams into the hub and is read aloud with the offline Windows voice.
 - **Hub:** stats (words, speaking speed, minutes saved), agent chat, searchable history, a custom dictionary, and settings (hotkeys, speech model, language, AI polish).
-- Start it by double-clicking `desktop\Run-Awaaz.cmd`. It also starts the Hermes API (localhost only) in WSL.
+- **Instant commands, no model:** "open YouTube", "notepad kholo", "daily brief" run in under a second, fully offline.
+- **Local-first, cloud optional:** with no key, the agent runs on Gemma via Ollama. Add any OpenAI-compatible key in Settings (Gemini free tier, Groq, OpenRouter, OpenAI, Claude) and bigger tasks go to that model, which can drive a real browser window: open pages, read them, click and type. Speech, history and quick commands never leave the PC.
+- **Browser guardrails:** it uses its own Chrome profile, never types passwords, labels page text as untrusted, and asks before anything that sends, posts, buys or submits.
+- Start it by double-clicking `desktop\Run-Awaaz.cmd`.
 
 ## Repo map
 

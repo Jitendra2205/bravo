@@ -215,10 +215,26 @@
           <span class="help">Built-in talks straight to Ollama. Hermes runs in Ubuntu and needs setup/wsl-setup.sh.</span></div>
         <div class="field"><label for="ollama_model">Local model</label><input type="text" id="ollama_model" spellcheck="false">
           <span class="help">gemma4:e4b is balanced. For faster replies run "ollama pull gemma4:e2b" and enter gemma4:e2b here.</span></div>
+        <div class="field"><label for="cloud_preset">Cloud model (optional)</label>
+          <select id="cloud_preset">
+            <option value="">Choose a provider to fill in the address…</option>
+            <option value="https://generativelanguage.googleapis.com/v1beta/openai|gemini-flash-latest">Google Gemini (free tier)</option>
+            <option value="https://api.groq.com/openai/v1|openai/gpt-oss-120b">Groq (free tier)</option>
+            <option value="https://openrouter.ai/api/v1|">OpenRouter (free and paid models)</option>
+            <option value="https://api.openai.com/v1|">OpenAI (paid)</option>
+            <option value="https://api.anthropic.com/v1|">Anthropic Claude (paid)</option>
+            <option value="http://localhost:1234/v1|">Other OpenAI-compatible server</option>
+          </select>
+          <span class="help">With a key, bigger tasks and browser work go to this model. Without one, everything stays on this PC.</span></div>
+        <div class="field"><label for="cloud_url">Cloud API address</label><input type="text" id="cloud_url" spellcheck="false"></div>
+        <div class="two">
+          <div class="field"><label for="cloud_model">Cloud model name</label><input type="text" id="cloud_model" spellcheck="false" placeholder="from your provider's model list"></div>
+          <div class="field"><label for="cloud_key">Cloud API key</label><input type="password" id="cloud_key" autocomplete="off" spellcheck="false" placeholder="leave empty to stay local"></div>
+        </div>
         <div class="field"><label for="agent_url">Hermes address</label><input type="text" id="agent_url" spellcheck="false"></div>
         <div class="field"><label for="agent_key">Hermes key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false">
           <span class="help">Filled in automatically from your Hermes setup. Never shared.</span></div>
-        <div class="note">Privacy: speech is transcribed on this PC, history is saved in your AppData folder, and nothing is sent online unless you add a cloud model to Hermes yourself.</div>
+        <div class="note">Privacy: speech is transcribed on this PC and history is saved in your AppData folder. Agent questions go online only when you add a cloud key above; quick commands like "open YouTube" never leave this PC.</div>
         <div><button class="btn primary" type="submit">Save</button></div>
       </form>
     </section>
@@ -232,6 +248,12 @@ const api = () => window.pywebview.api;
 let S = {};          // settings
 let chat = [];       // [{role, content}]
 let streaming = null;
+
+$('#cloud_preset').addEventListener('change', (ev) => {
+  if (!ev.target.value) return;
+  const [url, model] = ev.target.value.split('|');
+  $('#cloud_url').value = url; $('#cloud_model').value = model; $('#cloud_model').focus();
+});
 
 // ---- navigation
 document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => show(b.dataset.page)));
@@ -354,7 +376,7 @@ window.addEventListener('pywebviewready', boot);
 // Browser preview without the Python app: a fake API with sample data.
 setTimeout(() => { if (!window.pywebview) { window.pywebview = { api: window.__mockApi() }; boot(); } }, 300);
 window.__mockApi = () => {
-  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
+  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
   const hist = [
     { id: 'a', ts: now - 300, mode: 'dictate', words: 19, text: 'Hi Priya, sharing the revised invoice for October. Please confirm the GST number before Friday.' },
     { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Kal subah 9 baje invoice bhejne ka reminder lagao', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },

@@ -4,3 +4,4 @@ sounddevice>=0.4
 numpy>=1.26
 keyboard>=0.13
 pyperclip>=1.8
+playwright>=1.45
