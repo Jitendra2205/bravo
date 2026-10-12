@@ -80,7 +80,7 @@ class EngineTest(unittest.TestCase):
             [("delta", "Done, "), ("delta", "reminder added.")],
         ])
         seen = []
-        def fake_stream(url, model, msgs, tools_):
+        def fake_stream(url, model, msgs, tools_, **kw):
             seen.append([m["role"] for m in msgs])
             return iter(next(rounds))
         with tempfile.TemporaryDirectory() as ws, mock.patch.object(app.tools, "WORKSPACE", Path(ws)), \
@@ -101,6 +101,17 @@ class EngineTest(unittest.TestCase):
         reply = self.e.history.list()[0]["reply"]
         self.assertTrue(reply.startswith("1 overdue, 0 due today"), reply)
         self.assertIn("pay rent", reply)
+
+    def test_prime_uses_same_prefix_as_chat(self):
+        seen = []
+        def fake(url, model, msgs, tools_, **kw):
+            seen.append((msgs[0]["content"], len(tools_), kw.get("max_tokens")))
+            return iter([("delta", "ok")])
+        with mock.patch.object(core, "ollama_chat_stream", fake):
+            self.e.prime()
+            self.e.chat([{"role": "user", "content": "hello"}])
+        self.assertEqual(seen[0][:2], seen[1][:2])     # identical system prompt + tools -> cache hit
+        self.assertEqual((seen[0][2], seen[1][2]), (1, None))
 
     def test_builtin_offline_message(self):
         def offline(*a, **k):

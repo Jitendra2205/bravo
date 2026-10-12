@@ -156,6 +156,9 @@ class Engine:
                     t = time.monotonic()
                     core.ollama_warm(s["ollama_url"], warmed)
                     core.log(f"model {warmed} loaded in {time.monotonic() - t:.1f}s")
+                    t = time.monotonic()
+                    self.prime()
+                    core.log(f"prompt cached in {time.monotonic() - t:.1f}s")
                 except OSError as e:
                     core.log(f"warm-up failed: {e}")
             self.emit("status", {"agent": self.agent_label(ok), "agentOk": ok})
@@ -269,6 +272,21 @@ class Engine:
             threading.Timer(0.6, lambda: pyperclip.copy(old)).start()
 
     # ---------- agent
+    def system_prompt(self):
+        # Date only (no clock time) so the prompt prefix stays identical and Ollama reuses its cache.
+        return ("You are Awaaz, a fast private assistant on the owner's laptop. "
+                f"Today is {time.strftime('%A %Y-%m-%d')}. "
+                "Reply in 1-3 short sentences in the owner's language (English, Hindi or Hinglish). "
+                "Use tools for reminders and AgentWork files; never invent file contents.")
+
+    def prime(self):
+        """Run the instructions + tool list through the model once, so Ollama caches them.
+        Afterwards a question only costs its own words instead of re-reading ~600 tokens."""
+        s = self.settings
+        msgs = [{"role": "system", "content": self.system_prompt()}, {"role": "user", "content": "hi"}]
+        for _ in core.ollama_chat_stream(s["ollama_url"], s["ollama_model"], msgs, tools.SPECS, max_tokens=1):
+            pass
+
     def builtin_reply(self, messages):
         """Direct Ollama chat with Awaaz's own tools. Returns the final reply text."""
         s = self.settings
@@ -277,12 +295,7 @@ class Engine:
             reply = brief_summary(tools.run("daily_brief", {}))
             self.emit("chat_delta", reply)
             return reply
-        # Date only (no clock time) so the prompt prefix stays identical and Ollama reuses its cache.
-        system = ("You are Awaaz, a fast private assistant on the owner's laptop. "
-                  f"Today is {time.strftime('%A %Y-%m-%d')}. "
-                  "Reply in 1-3 short sentences in the owner's language (English, Hindi or Hinglish). "
-                  "Use tools for reminders and AgentWork files; never invent file contents.")
-        msgs = [{"role": "system", "content": system}] + messages
+        msgs = [{"role": "system", "content": self.system_prompt()}] + messages
         reply = ""
         for _ in range(4):                 # at most 3 tool rounds, then a final answer
             content, calls = "", []
@@ -427,11 +440,13 @@ def main():
     # Only one Awaaz at a time: two copies would both paste every dictation.
     subprocess.run(["taskkill", "/F", "/FI", "WINDOWTITLE eq Awaaz pill"], capture_output=True, creationflags=NO_WINDOW)
     engine = Engine()
-    engine.hub = webview.create_window("Awaaz", url=str(UI / "hub.html"), js_api=Api(engine),
+    # ?v=<mtime> stops WebView2 from showing a cached copy after an update
+    ui = lambda name: (UI / name).as_uri() + f"?v={int((UI / name).stat().st_mtime)}"
+    engine.hub = webview.create_window("Awaaz", url=ui("hub.html"), js_api=Api(engine),
                                        width=1040, height=720, min_size=(720, 520))
     screen = webview.screens[0]
     w, h = 300, 40
-    engine.pill = webview.create_window("Awaaz pill", url=str(UI / "pill.html"), width=w, height=h,
+    engine.pill = webview.create_window("Awaaz pill", url=ui("pill.html"), width=w, height=h, min_size=(w, h),
                                         x=(screen.width - w) // 2, y=screen.height - h - 64,
                                         frameless=True, on_top=True, focus=False, background_color="#161412")
 

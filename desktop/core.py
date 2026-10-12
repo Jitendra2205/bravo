@@ -189,14 +189,15 @@ def ollama_root(url):
 OLLAMA_OPTIONS = {"num_ctx": 4096, "temperature": 0.3}
 
 
-def ollama_chat_stream(url, model, messages, tools=None, timeout=600):
+def ollama_chat_stream(url, model, messages, tools=None, timeout=600, max_tokens=None):
     """Stream Ollama's native chat. Yields ('delta', text) and ('tool_calls', [...]).
 
     think=False skips the model's long hidden reasoning; keep_alive keeps it loaded between
     questions; a 4k context keeps prompt processing quick on a CPU.
     """
+    options = dict(OLLAMA_OPTIONS, **({"num_predict": max_tokens} if max_tokens else {}))
     payload = {"model": model, "messages": messages, "stream": True, "think": False,
-               "keep_alive": "30m", "options": OLLAMA_OPTIONS}
+               "keep_alive": "30m", "options": options}
     if tools:
         payload["tools"] = tools
     with _post(ollama_root(url) + "/api/chat", payload, timeout=timeout) as r:
