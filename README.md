@@ -66,8 +66,32 @@ A small Windows app on top of the agent: a floating pill at the bottom of the sc
 - **Instant commands, no model:** "open YouTube", "notepad kholo", "daily brief" run in under a second, fully offline.
 - **Local-first, cloud optional:** with no key, the agent runs on Gemma via Ollama. Add any OpenAI-compatible key in Settings (Gemini free tier, Groq, OpenRouter, OpenAI, Claude) and bigger tasks go to that model, which can drive a real browser window: open pages, read them, click and type. Speech, history and quick commands never leave the PC.
 - **Agent features (with a cloud key):** remembers facts about you across chats, looks at your screen when asked, writes files in AgentWork, reads and fills your clipboard, schedules tasks ("every weekday 9 AM, top AI news"), and announces timed reminders out loud. New chat stops a long task.
+- **More:** runs PowerShell commands, reads and sends Gmail, reads and creates Calendar events, generates images, and you can chat with it from your phone over Telegram (text or voice notes).
 - **Browser guardrails:** it uses its own Chrome profile, never types passwords, labels page text as untrusted, and asks before anything that sends, posts, buys or submits.
 - Start it by double-clicking `desktop\Run-Awaaz.cmd`.
+
+## Connect Gmail, Calendar, images and your phone (optional)
+
+**Terminal commands, emails and calendar events always need your OK:** a Yes/No box on the PC, or "reply YES" on Telegram. This is enforced in code, not left to the model.
+
+**Gmail + Google Calendar** (one-time, about 10 minutes, free):
+1. Open console.cloud.google.com, create a project (e.g. "Awaaz").
+2. APIs & Services > Library: enable **Gmail API** and **Google Calendar API**.
+3. APIs & Services > OAuth consent screen: User type **External**, fill the app name and your email, add yourself under **Test users**. Press **Publish app** so sign-in doesn't expire every 7 days (Google will warn the app is unverified; that's expected for a personal app).
+4. Credentials > Create credentials > **OAuth client ID** > Application type **Desktop app**. Copy the client ID and secret.
+5. In Awaaz: Settings > Gmail and Google Calendar, paste both, press **Save**, then **Connect Google** and approve in the browser.
+
+Scopes used: read Gmail, send Gmail, manage calendar events. The token stays in your AppData folder.
+
+**Images:** set Settings > Image model to an image model your cloud provider offers (for example `gpt-image-1` on OpenAI). Images are saved in `AgentWork\images` and opened.
+
+**Phone (Telegram):**
+1. In Telegram, message **@BotFather**, send `/newbot`, pick a name, copy the token.
+2. Paste it in Awaaz Settings > Phone and press **Save**.
+3. Message your new bot. It replies with your Telegram ID; paste that in **Your Telegram ID** and Save.
+4. Now text or send voice notes (Hinglish works) from anywhere. The PC must be on with Awaaz open. The bot ignores everyone else.
+
+WhatsApp isn't supported: the official API needs a Meta business account and a public server, and unofficial WhatsApp bots get numbers banned.
 
 ## Repo map
 

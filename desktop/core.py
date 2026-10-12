@@ -28,6 +28,11 @@ DEFAULTS = {
     "cloud_url": "https://generativelanguage.googleapis.com/v1beta/openai",
     "cloud_key": "",
     "cloud_model": "gemini-flash-latest",
+    "image_model": "",                 # e.g. gpt-image-1 (OpenAI) or an image model your provider lists
+    "google_client_id": "",            # Gmail + Calendar: your own Google OAuth "Desktop app" client
+    "google_client_secret": "",
+    "telegram_token": "",              # phone chat: bot token from @BotFather
+    "telegram_user": "",               # the only Telegram user id the bot answers
     "dictionary": {"hermes": "Hermes", "awaz": "Awaaz", "olama": "Ollama"},
 }
 

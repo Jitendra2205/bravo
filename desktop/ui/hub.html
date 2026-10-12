@@ -233,6 +233,21 @@
           <div class="field"><label for="cloud_model">Cloud model name</label><input type="text" id="cloud_model" spellcheck="false" placeholder="from your provider's model list"></div>
           <div class="field"><label for="cloud_key">Cloud API key</label><input type="password" id="cloud_key" autocomplete="off" spellcheck="false" placeholder="leave empty to stay local"></div>
         </div>
+        <div class="field"><label for="image_model">Image model (optional)</label><input type="text" id="image_model" spellcheck="false" placeholder="e.g. gpt-image-1 on OpenAI">
+          <span class="help">Used for "make an image of…". Uses the same cloud address and key.</span></div>
+        <div class="field"><label>Gmail and Google Calendar</label>
+          <div class="two">
+            <input type="text" id="google_client_id" spellcheck="false" placeholder="OAuth client ID" aria-label="Google client ID">
+            <input type="password" id="google_client_secret" autocomplete="off" spellcheck="false" placeholder="Client secret" aria-label="Google client secret">
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><button class="btn" type="button" id="google-connect">Connect Google</button><span class="help" id="google-status">Not connected</span></div>
+          <span class="help">Create a free "Desktop app" OAuth client in Google Cloud (steps in the README), paste it here, press Save, then Connect.</span></div>
+        <div class="field"><label>Phone (Telegram)</label>
+          <div class="two">
+            <input type="password" id="telegram_token" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token">
+            <input type="text" id="telegram_user" spellcheck="false" placeholder="Your Telegram ID" aria-label="Your Telegram ID">
+          </div>
+          <span class="help">Message your bot once; it replies with your ID. Paste it here and Save. The bot answers only you.</span></div>
         <div class="field"><label for="agent_url">Hermes address</label><input type="text" id="agent_url" spellcheck="false"></div>
         <div class="field"><label for="agent_key">Hermes key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false">
           <span class="help">Filled in automatically from your Hermes setup. Never shared.</span></div>
@@ -255,6 +270,12 @@ $('#cloud_preset').addEventListener('change', (ev) => {
   if (!ev.target.value) return;
   const [url, model] = ev.target.value.split('|');
   $('#cloud_url').value = url; $('#cloud_model').value = model; $('#cloud_model').focus();
+});
+
+$('#google-connect').addEventListener('click', async () => {
+  $('#google-status').textContent = 'Finish signing in in your browser…';
+  const r = await api().connect_google();
+  $('#google-status').textContent = r; toast(r.startsWith('Google connected') ? 'Google connected' : 'Not connected');
 });
 
 // ---- navigation
@@ -371,6 +392,7 @@ window.Awaaz = {
 async function boot() {
   const b = await api().get_bootstrap();
   S = b.settings; fillSettings(); renderStats(b.stats);
+  if (b.google) $('#google-status').textContent = 'Connected';
   renderList($('#recent'), b.history.slice(0, 5), 'Your dictations and questions will show up here.');
   const h = new Date().getHours(); $('#greet').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   Awaaz.emit('status', b.status);
@@ -379,7 +401,7 @@ window.addEventListener('pywebviewready', boot);
 // Browser preview without the Python app: a fake API with sample data.
 setTimeout(() => { if (!window.pywebview) { window.pywebview = { api: window.__mockApi() }; boot(); } }, 300);
 window.__mockApi = () => {
-  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
+  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', image_model: '', google_client_id: '', google_client_secret: '', telegram_token: '', telegram_user: '', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
   const hist = [
     { id: 'a', ts: now - 300, mode: 'dictate', words: 19, text: 'Hi Priya, sharing the revised invoice for October. Please confirm the GST number before Friday.' },
     { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Kal subah 9 baje invoice bhejne ka reminder lagao', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },
@@ -390,7 +412,7 @@ window.__mockApi = () => {
     get_stats: async () => ({ words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }),
     list_history: async (q) => hist.filter((e) => !q || e.text.toLowerCase().includes(q.toLowerCase())),
     delete_history: async () => true, clear_history: async () => true, copy_text: async () => true, stop_speaking: async () => true,
-    save_settings: async (s) => (settings = s),
+    save_settings: async (s) => (settings = s), connect_google: async () => 'Google connected (preview)',
     send_chat: async () => { const words = 'You have one reminder today: send the invoice to Kavya Traders at 9 am.'.split(' '); let i = 0; const t = setInterval(() => { if (i < words.length) Awaaz.emit('chat_delta', (i ? ' ' : '') + words[i++]); else { clearInterval(t); Awaaz.emit('chat_done'); } }, 60); },
   };
 };

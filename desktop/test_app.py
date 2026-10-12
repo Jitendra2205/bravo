@@ -190,6 +190,42 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(self.e.history.list()[0]["reply"], "Stopped.")
         self.assertFalse(self.e.busy)
 
+    def test_risky_actions_need_the_owners_yes(self):
+        self.cloud()
+        ran = []
+        def turns():
+            yield {"role": "assistant", "content": "", "tool_calls": [{"id": "r", "function": {"name": "run_command", "arguments": '{"command": "Remove-Item *"}'}}]}
+            yield {"role": "assistant", "content": "Okay, not done."}
+        for answer in (False, True):
+            it = turns()
+            ch = app.Channel(lambda t: None, lambda q: answer)
+            with mock.patch.object(core, "cloud_chat", lambda *a, **k: next(it)), \
+                    mock.patch.object(app.integrations, "run", lambda n, a: ran.append(a["command"]) or "Exit code 0"):
+                self.e.builtin_reply([{"role": "user", "content": "clean up"}], ch)
+        self.assertEqual(ran, ["Remove-Item *"])                     # only the approved run happened
+
+    def test_telegram_private_and_answers_owner(self):
+        self.e.settings.update(telegram_token="T", telegram_user="111")
+        sent = []
+        batches = iter([[{"update_id": 1, "message": {"chat": {"id": 9}, "from": {"id": 222}, "text": "hi"}},
+                         {"update_id": 2, "message": {"chat": {"id": 5}, "from": {"id": 111}, "text": "YouTube kholo"}}]])
+        def fake_updates(token, offset):
+            try:
+                return next(batches)
+            except StopIteration:
+                raise SystemExit                                      # end the poll loop for the test
+        with mock.patch.object(app.telegram, "updates", fake_updates), \
+                mock.patch.object(app.telegram, "send", lambda t, c, text: sent.append((c, text))), \
+                mock.patch.object(app.telegram, "typing", lambda *a: None), \
+                mock.patch.object(app.tools.webbrowser, "open", lambda u: None), \
+                mock.patch.object(threading, "Thread", lambda target, args, daemon: types.SimpleNamespace(start=lambda: target(*args))):
+            with self.assertRaises(SystemExit):
+                self.e.telegram_loop()
+        self.assertIn("This Awaaz is private", sent[0][1])
+        self.assertIn("222", sent[0][1])                              # stranger only learns their own id
+        self.assertEqual(sent[1], (5, "Opened https://www.youtube.com"))
+        self.assertEqual(self.e.history.list()[0]["text"], "[Phone] YouTube kholo")
+
     def test_brief_fast_path_skips_the_model(self):
         def must_not_call(*a, **k):
             raise AssertionError("model should not be called for the brief")
