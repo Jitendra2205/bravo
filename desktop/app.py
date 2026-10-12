@@ -460,7 +460,8 @@ class Engine:
         mem = tools.memories()
         return ("You are Bravo, a fast private assistant on the owner's laptop. "
                 f"Today is {time.strftime('%A %Y-%m-%d')}. "
-                "Reply in 1-3 short sentences in the owner's language (English, Hindi or Hinglish). "
+                "Reply in 1-3 short sentences in the owner's language and script: Hindi for Hindi, English for English, "
+                "and Roman-script Hindi (Hinglish) when they write that way. "
                 "Use tools for reminders, AgentWork files, opening websites and apps, and searching; "
                 "never invent file contents." + (f"\nWhat you know about the owner:\n{mem}" if mem else ""))
 
@@ -556,8 +557,10 @@ class Engine:
             msg = core.cloud_chat(s["cloud_url"], s["cloud_key"], s["cloud_model"], msgs, CLOUD_TOOLS)
             calls = msg.get("tool_calls") or []
             if not calls:
-                ch.say(msg["content"])
-                return msg["content"]
+                # Some models (e.g. MiniMax) put their reasoning in <think> tags; the owner sees only the answer.
+                reply = re.sub(r"<think>.*?</think>", "", msg["content"], flags=re.S).strip()
+                ch.say(reply)
+                return reply
             msgs.append(msg)
             images = []
             for c in calls:
@@ -673,8 +676,12 @@ class Engine:
 
     def speak(self, text):
         self.stop_speaking()
+        # Hindi script gets a Hindi voice when Windows has one installed; otherwise the default voice is used.
         script = ("Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
-                  "$s.Speak([Console]::In.ReadToEnd())")
+                  "$t = [Console]::In.ReadToEnd(); "
+                  "if ($t -match '[\u0900-\u097F]') { $v = $s.GetInstalledVoices() | Where-Object "
+                  "{ $_.VoiceInfo.Culture.Name -eq 'hi-IN' } | Select-Object -First 1; "
+                  "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) } }; $s.Speak($t)")
         try:   # text goes through stdin, never into the command line
             self.tts = subprocess.Popen(["powershell", "-NoProfile", "-Command", script], stdin=subprocess.PIPE,
                                         creationflags=NO_WINDOW, text=True, encoding="utf-8")

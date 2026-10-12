@@ -154,6 +154,13 @@ class EngineTest(unittest.TestCase):
         self.assertGreater(len(last[1]), 5000)                       # newest page kept whole
         self.assertIn("Opening html.duckduckgo.com", " ".join(self.events("progress")))
 
+    def test_model_thinking_is_hidden_from_the_owner(self):
+        self.cloud()
+        reply = {"role": "assistant", "content": "<think>The owner wants Hindi.</think>\nनमस्ते! मैं मदद कर सकता हूँ।"}
+        with mock.patch.object(core, "cloud_chat", lambda *a, **k: reply):
+            self.e.chat([{"role": "user", "content": "नमस्ते"}])
+        self.assertEqual(self.e.history.list()[0]["reply"], "नमस्ते! मैं मदद कर सकता हूँ।")
+
     def test_cloud_rate_limit_message(self):
         self.cloud()
         def limited(*a, **k):

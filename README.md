@@ -17,7 +17,7 @@ Telegram from your phone. As a bonus, the same hotkey gives you free, private di
 
 - **Free:** the local model, speech recognition and quick commands run on your PC. For faster and smarter
   agent work, plug in any OpenAI-compatible key: a free tier (Groq, Gemini, OpenRouter) or a paid one
-  (OpenAI, Claude).
+  (OpenAI, Claude, MiniMax).
 - **Private by default:** history, memory and settings live on your PC. Your voice never leaves it. Nothing goes
   online until you add a cloud key.
 - **Safe to hand the keys to:** commands, emails and calendar invites need your Yes every time, enforced in
