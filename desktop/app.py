@@ -315,6 +315,11 @@ class Engine:
                 result = tools.run(fn.get("name"), fn.get("arguments"))
                 core.log(f"tool {fn.get('name')} -> {result[:120]!r}")
                 msgs.append({"role": "tool", "content": result, "tool_name": fn.get("name")})
+            # A saved reminder needs no second model pass on a CPU: confirm it directly (~half the wait).
+            if all(c.get("function", {}).get("name") == "add_reminder" for c in calls):
+                done = " ".join(m["content"].replace("Added:", "Reminder set:") for m in msgs[-len(calls):])
+                self.emit("chat_delta", done)
+                return reply + done
         return reply
 
     def hermes_reply(self, messages):
@@ -459,8 +464,7 @@ def main():
     close_previous_copy()
     engine = Engine()
     # ?v=<mtime> stops WebView2 from showing a cached copy after an update
-    ui = lambda name: (UI / name).as_uri() + f"?v={int((UI / name).stat().st_mtime)}"
-    engine.hub = webview.create_window("Awaaz", url=ui("hub.html"), js_api=Api(engine),
+    engine.hub = webview.create_window("Awaaz", url=str(UI / "hub.html"), js_api=Api(engine),
                                        width=1040, height=720, min_size=(720, 520))
     engine.pill = Pill()
 

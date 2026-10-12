@@ -86,7 +86,7 @@ class EngineTest(unittest.TestCase):
 
     def test_builtin_agent_runs_tool_then_answers(self):
         rounds = iter([
-            [("tool_calls", [{"function": {"name": "add_reminder", "arguments": {"date": "2026-10-13", "time": "09:00", "text": "Send invoice"}}}])],
+            [("tool_calls", [{"function": {"name": "list_files", "arguments": {}}}])],
             [("delta", "Done, "), ("delta", "reminder added.")],
         ])
         seen = []
@@ -95,11 +95,22 @@ class EngineTest(unittest.TestCase):
             return iter(next(rounds))
         with tempfile.TemporaryDirectory() as ws, mock.patch.object(app.tools, "WORKSPACE", Path(ws)), \
                 mock.patch.object(core, "ollama_chat_stream", fake_stream):
-            self.e.chat([{"role": "user", "content": "kal 9 baje invoice reminder"}])
-            self.assertIn("- 2026-10-13 09:00 Send invoice", (Path(ws) / "reminders.md").read_text())
+            self.e.chat([{"role": "user", "content": "what files do I have"}])
         self.assertEqual(seen[1][-2:], ["assistant", "tool"])          # tool result fed back to the model
         self.assertEqual(self.e.history.list()[0]["reply"], "Done, reminder added.")
         self.assertTrue(self.events("chat_done"))
+
+    def test_reminder_confirms_without_second_model_pass(self):
+        calls = []
+        def fake_stream(*a, **kw):
+            calls.append(1)
+            return iter([("tool_calls", [{"function": {"name": "add_reminder", "arguments": {"date": "2026-10-13", "time": "09:00", "text": "Send invoice"}}}])])
+        with tempfile.TemporaryDirectory() as ws, mock.patch.object(app.tools, "WORKSPACE", Path(ws)), \
+                mock.patch.object(core, "ollama_chat_stream", fake_stream):
+            self.e.chat([{"role": "user", "content": "kal 9 baje invoice reminder"}])
+            self.assertIn("- 2026-10-13 09:00 Send invoice", (Path(ws) / "reminders.md").read_text())
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(self.e.history.list()[0]["reply"], "Reminder set: 2026-10-13 09:00 Send invoice")
 
     def test_brief_fast_path_skips_the_model(self):
         def must_not_call(*a, **k):
