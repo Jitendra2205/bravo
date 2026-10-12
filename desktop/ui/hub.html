@@ -327,7 +327,7 @@ $('#clear').addEventListener('click', async () => { if (await api().clear_histor
 
 // ---- settings + dictionary
 function fillSettings() {
-  for (const [k, v] of Object.entries(S)) { const el = document.getElementById(k); if (!el) continue; if (el.type === 'checkbox') el.checked = v; else el.value = v; }
+  for (const [k, v] of Object.entries(S)) { const el = $('#settings-form').elements[k]; if (!el) continue; if (el.type === 'checkbox') el.checked = v; else el.value = v; }
   ['#k-dictate'].forEach((s) => ($(s).textContent = keyName(S.dictate_hotkey)));
   ['#k-agent', '#k-agent2'].forEach((s) => ($(s).textContent = keyName(S.agent_hotkey)));
   renderDict();
@@ -335,7 +335,8 @@ function fillSettings() {
 $('#settings-form').addEventListener('submit', async (ev) => {
   ev.preventDefault();
   const next = { ...S };
-  for (const k of Object.keys(S)) { const el = document.getElementById(k); if (!el) continue; next[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); }
+  // form fields only: "dictionary" is also a page id
+  for (const k of Object.keys(S)) { const el = ev.target.elements[k]; if (!el) continue; next[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); }
   if (next.dictate_hotkey === next.agent_hotkey) { toast('Pick two different keys'); return; }
   S = await api().save_settings(next); fillSettings(); toast('Saved');
 });
