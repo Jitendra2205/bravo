@@ -87,7 +87,9 @@
   .chip:hover { color: var(--ink); border-color: var(--muted); }
   /* forms */
   .form { display: grid; gap: 18px; max-width: 620px; }
-  .field { display: grid; gap: 6px; }
+  .field { display: grid; gap: 6px; min-width: 0; }
+  .field select, .field input { min-width: 0; width: 100%; }
+  .form > *, .two > * { min-width: 0; }
   .field label { font-weight: 600; font-size: 14px; }
   .field .help { color: var(--muted); font-size: 13px; }
   .field input[type=text], .field input[type=password], .field select { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 38px; }
@@ -99,7 +101,7 @@
   .toast.show { opacity: 1; }
   .dict-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
   .dict-row input { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-  @media (max-width: 720px) { .app { grid-template-columns: 1fr; } aside { display: none; } main { padding: 24px 16px; } .two { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) { .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } aside { min-width: 0; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); } aside .brand, aside .status { display: none; } nav { display: flex; overflow-x: auto; } nav button { width: auto; flex: none; } main { padding: 24px 16px; } .two { grid-template-columns: 1fr; } }
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -127,7 +129,7 @@
   <main>
     <section id="home">
       <h1 id="greet">Namaste</h1>
-      <p class="sub">Speak anywhere on your PC. Everything stays on this laptop.</p>
+      <p class="sub">Speak anywhere on your PC. Your voice is transcribed on this laptop.</p>
       <div class="keys">
         <div class="keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
           <div><b>Dictate anywhere</b><small>Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. Text appears where your cursor is.</small></div></div>
@@ -147,7 +149,7 @@
 
     <section id="agent" hidden>
       <div class="row" style="justify-content:space-between;margin-bottom:8px">
-        <div><h1>Agent</h1><p class="sub" style="margin:0">Your private agent, running on this laptop. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
+        <div><h1>Agent</h1><p class="sub" style="margin:0">Your agent: it uses your cloud model when a key is set, otherwise the local one. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
         <button class="btn" id="new-chat" title="Starts over and stops a running task">New chat</button>
       </div>
       <div class="thread" id="thread" aria-live="polite"></div>
@@ -273,6 +275,8 @@ $('#cloud_preset').addEventListener('change', (ev) => {
 });
 
 $('#google-connect').addEventListener('click', async () => {
+  if (!(await saveForm())) return;
+  if (!S.google_client_id || !S.google_client_secret) { $('#google-status').textContent = 'Paste the client ID and secret first'; return; }
   $('#google-status').textContent = 'Finish signing in in your browser…';
   const r = await api().connect_google();
   $('#google-status').textContent = r; toast(r.startsWith('Google connected') ? 'Google connected' : 'Not connected');
@@ -332,14 +336,14 @@ function fillSettings() {
   ['#k-agent', '#k-agent2'].forEach((s) => ($(s).textContent = keyName(S.agent_hotkey)));
   renderDict();
 }
-$('#settings-form').addEventListener('submit', async (ev) => {
-  ev.preventDefault();
+async function saveForm() {
   const next = { ...S };
   // form fields only: "dictionary" is also a page id
-  for (const k of Object.keys(S)) { const el = ev.target.elements[k]; if (!el) continue; next[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); }
-  if (next.dictate_hotkey === next.agent_hotkey) { toast('Pick two different keys'); return; }
-  S = await api().save_settings(next); fillSettings(); toast('Saved');
-});
+  for (const k of Object.keys(S)) { const el = $('#settings-form').elements[k]; if (!el) continue; next[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); }
+  if (next.dictate_hotkey === next.agent_hotkey) { toast('Pick two different keys'); return false; }
+  S = await api().save_settings(next); fillSettings(); return true;
+}
+$('#settings-form').addEventListener('submit', async (ev) => { ev.preventDefault(); if (await saveForm()) toast('Saved'); });
 function renderDict() {
   const rows = Object.entries(S.dictionary || {}).map(([from, to]) => {
     const r = document.createElement('div'); r.className = 'dict-row';
@@ -372,7 +376,7 @@ $('#msg').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.sh
 $('#msg').addEventListener('input', autosize);
 function autosize() { const m = $('#msg'); m.style.height = 'auto'; m.style.height = Math.min(m.scrollHeight, 140) + 'px'; }
 document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => ask(c.textContent)));
-$('#new-chat').addEventListener('click', () => { chat = []; $('#thread').replaceChildren(); $('#chips').hidden = false; api().stop_speaking(); });
+$('#new-chat').addEventListener('click', () => { chat = []; streaming = null; setBusy(false); $('#thread').replaceChildren(); $('#chips').hidden = false; api().stop_speaking(); });
 
 // ---- events pushed from Python
 window.Awaaz = {

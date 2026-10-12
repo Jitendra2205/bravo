@@ -144,6 +144,18 @@ class EngineTest(unittest.TestCase):
             self.e.chat([{"role": "user", "content": "find flights"}])
         self.assertIn("rate limit", self.events("chat_error")[-1])
 
+    def test_out_of_credits_and_unexpected_errors_reach_the_chat(self):
+        self.cloud()
+        def broke(*a, **k):
+            raise urllib.error.HTTPError("u", 402, "pay", {}, io.BytesIO(b"credits depleted"))
+        with mock.patch.object(core, "cloud_chat", broke):
+            self.e.chat([{"role": "user", "content": "top AI models"}])
+        self.assertIn("out of credits", self.events("chat_error")[-1])
+        with mock.patch.object(core, "cloud_chat", lambda *a, **k: {}["choices"]):
+            self.e.chat([{"role": "user", "content": "top AI models"}])
+        self.assertIn("Something went wrong", self.events("chat_error")[-1])
+        self.assertFalse(self.e.busy)
+
     def test_cloud_offline_falls_back_to_local(self):
         self.cloud()
         def offline(*a, **k):
