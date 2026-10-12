@@ -131,16 +131,16 @@
   <main>
     <section id="home">
       <h1 id="greet">Hello</h1>
-      <p class="sub">Speak anywhere on your PC. Your voice is transcribed on this laptop.</p>
+      <p class="sub">Your AI agent on this PC. Give it a task by typing, speaking or messaging from your phone.</p>
       <div class="keys">
-        <div class="keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
-          <div><b>Dictate anywhere</b><small>Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. Text appears where your cursor is.</small></div></div>
         <div class="keycard agent"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div><b>Ask your agent</b><small>Hold <kbd id="k-agent">Right Alt</kbd> and ask. Bravo answers here and out loud.</small></div></div>
+          <div><b>Give Bravo a task</b><small>Hold <kbd id="k-agent">Right Alt</kbd> and say it, or type in the Agent tab. Bravo does it and answers out loud.</small></div></div>
+        <div class="keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
+          <div><b>Bonus: dictate anywhere</b><small>Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. Text appears where your cursor is.</small></div></div>
       </div>
       <h2>Your numbers</h2>
       <div class="stats">
-        <div class="stat"><div class="n" id="s-today">0</div><div class="l">Words today</div></div>
+        <div class="stat"><div class="n" id="s-tasks">0</div><div class="l">Tasks done by Bravo</div></div>
         <div class="stat"><div class="n" id="s-total">0</div><div class="l">Words dictated</div></div>
         <div class="stat"><div class="n" id="s-wpm">0</div><div class="l">Speaking speed (wpm)</div></div>
         <div class="stat"><div class="n" id="s-saved">0</div><div class="l">Minutes saved vs typing</div></div>
@@ -323,7 +323,7 @@ function renderList(el, items, emptyText) {
   el.replaceChildren(...(items.length ? items.map((e) => itemEl(e)) : [Object.assign(document.createElement('div'), { className: 'empty', textContent: emptyText })]));
 }
 function renderStats(st) {
-  $('#s-today').textContent = st.words_today.toLocaleString(); $('#s-total').textContent = st.words_total.toLocaleString();
+  $('#s-tasks').textContent = st.agent_turns.toLocaleString(); $('#s-total').textContent = st.words_total.toLocaleString();
   $('#s-wpm').textContent = st.wpm; $('#s-saved').textContent = st.minutes_saved;
 }
 async function refreshStats() { renderStats(await api().get_stats()); }

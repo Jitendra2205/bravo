@@ -1,36 +1,43 @@
 <img src="desktop/ui/bravo-logo.svg" alt="Bravo puppy logo" width="96">
 
-# Bravo — a free, private voice agent for your Windows PC
+# Bravo — a free AI agent that runs on your own PC
 
-Hold a key, speak in English or Hindi, and Bravo either types what you said into any app or
-does it for you: opens sites, researches on the web in a real Chrome window, sets reminders, reads your
-screen, drafts emails, runs scheduled jobs, and answers you out loud. You can also message it from your
-phone on Telegram.
+Bravo is a personal AI agent that does things for you: it browses the web in a real Chrome window, researches
+and reports back, runs scheduled jobs, reads your screen, handles Gmail and Calendar, runs commands on your PC,
+makes images, and keeps working while you're away, reachable from your phone.
 
-Named after my dog, Bravo: loyal, quick, and happy to fetch things for you. It is built for people who want an AI assistant that **runs on their own laptop, costs nothing to run,
-and asks before it does anything risky**.
+It is an open-source alternative to always-on agents like **ChatGPT dots** and **Grok Bot**, which come with
+plans of $100 a month and up. Bravo runs on a normal Windows laptop (no GPU), costs nothing by default, and
+asks before it does anything risky.
 
-- **Free:** speech recognition, quick commands and the local model run on your PC. For harder tasks, plug in
-  any OpenAI-compatible key: a free tier (Groq, Gemini, OpenRouter) or a paid one (OpenAI, Claude).
-- **Private by default:** your voice never leaves the PC. History, memory and settings live in your
-  AppData folder. Nothing goes online until you add a cloud key.
+Named after my dog, Bravo: loyal, quick, and happy to fetch things for you.
+
+**Talk to it however you like:** type in the app, hold a key and speak (English or Hindi), or message it on
+Telegram from your phone. As a bonus, the same hotkey gives you free, private dictation into any app.
+
+- **Free:** the local model, speech recognition and quick commands run on your PC. For faster and smarter
+  agent work, plug in any OpenAI-compatible key: a free tier (Groq, Gemini, OpenRouter) or a paid one
+  (OpenAI, Claude).
+- **Private by default:** history, memory and settings live on your PC. Your voice never leaves it. Nothing goes
+  online until you add a cloud key.
 - **Safe to hand the keys to:** commands, emails and calendar invites need your Yes every time, enforced in
   code. It never types passwords and treats web pages as untrusted text. See [SECURITY.md](SECURITY.md).
 
 ## What it can do
 
-| You say | What happens | Needs |
+| You ask | What Bravo does | Needs |
 | --- | --- | --- |
-| *(hold Right Ctrl)* "Hi Priya, sharing the invoice…" | Typed into whatever app has your cursor, filler words removed | Nothing (local Whisper) |
-| "Open YouTube", "open Notepad", "daily brief" | Done in under a second, no AI model involved | Nothing |
-| "Remind me to send the invoice tomorrow at 9 am" | Reminder saved, announced out loud when it's due | Local model or cloud key |
-| "Open Chrome and find the top 3 AI models this week" | Searches in its own Chrome window, reads the pages, answers with what they say | Cloud key |
-| "What's on my screen?" | Looks at your screen and explains it | Cloud key with vision |
-| "Every weekday at 9, give me the top AI news" | Scheduled task, runs on its own | Cloud key |
+| "Find the top 3 AI models this week" | Searches in its own Chrome window, reads the pages, answers with what they say | Cloud key |
+| "Every weekday at 9, give me the top AI news" | Creates a scheduled job that runs on its own | Cloud key |
+| "Summarise my unread emails" / "Add a call tomorrow at 3 pm" | Gmail and Calendar through Google's official sign-in; sends **only after you click Yes** | Cloud key + Google sign-in |
 | "How much disk space is free?" | Runs a PowerShell command **after you click Yes** | Cloud key |
-| "Summarise my unread emails" / "Add a call tomorrow 3 pm" | Gmail and Calendar through Google's official sign-in, sending **after you click Yes** | Cloud key + Google sign-in |
-| "Make an image of a chai cup at sunrise" | Generated and saved to `AgentWork\images` | Key with an image model |
-| A voice note to your Telegram bot | Answered from your PC, wherever you are | Telegram bot token |
+| "What's on my screen?" | Looks at your screen and explains it | Cloud key with vision |
+| "Remind me to send the invoice tomorrow at 9 am" | Saves the reminder and says it out loud when it's due | Local model or cloud key |
+| "Remember that I prefer short answers" | Keeps it in memory across chats | Cloud key |
+| "Make an image of a cup of tea at sunrise" | Generates it and saves it to `AgentWork\images` | Key with an image model |
+| A message or voice note from your phone | Answered by your PC, wherever you are | Telegram bot token |
+| "Open YouTube", "open Notepad", "daily brief" | Done in under a second, no AI model involved | Nothing |
+| *(hold Right Ctrl and speak)* | Dictation: typed into whatever app has your cursor | Nothing |
 
 ## Quick start (Windows 10/11, 8–16 GB RAM, no GPU needed)
 
@@ -42,7 +49,7 @@ and asks before it does anything risky**.
 4. **Optional fully offline brain:** install [Ollama](https://ollama.com/download) and Bravo downloads the
    local model (`gemma4:e4b`) by itself. For more speed on older laptops, set the local model to `gemma4:e2b`.
 
-Then hold **Right Ctrl** to dictate, or **Right Alt** to talk to the agent.
+Then give Bravo a task: type it in the **Agent** tab, or hold **Right Alt** and say it. (**Right Ctrl** is dictation.)
 
 ## How fast is it?
 
@@ -62,17 +69,17 @@ shows each step live ("Opening html.duckduckgo.com…").
 ## How it works
 
 ```
-Hold key ─► microphone ─► Whisper (on your PC) ─► text
-                                                   │
-               dictation ◄─────────────────────────┤ agent
-       (pasted into the app                         ▼
-        under your cursor)            instant commands (no model)
-                                                   │
-                                  cloud key set? ──┼── yes ─► your provider (Groq, Gemini, OpenAI, Claude…)
-                                                   │            │  tools: Chrome, screen, files, memory,
-                                                   no           │  schedules, PowerShell*, Gmail*, Calendar*
-                                                   ▼            ▼
-                                       Ollama on localhost   * = asks you first, every time
+You: type in the app ───┐
+     hold a key, speak ─┼─► (speech → text with Whisper, on your PC)
+     Telegram message ──┘                      │
+                                               ▼
+                             instant commands (no model needed)
+                                               │
+                         cloud key set? ───────┼── yes ─► your provider (Groq, Gemini, OpenAI, Claude…)
+                                               │            │  agent tools: Chrome, screen, files, memory,
+                                               no           │  schedules, PowerShell*, Gmail*, Calendar*, images
+                                               ▼            ▼
+                                   Ollama on localhost   * = asks you first, every time
 ```
 
 - **Desktop app:** Python + pywebview, a floating pill and a hub window (chat, history, dictionary, settings).

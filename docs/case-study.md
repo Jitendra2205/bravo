@@ -1,4 +1,4 @@
-# Case study: a private voice agent for $0
+# Case study: a free AI agent that runs on my laptop
 
 _Draft. Fill the bracketed parts with your real numbers and experience._
 
