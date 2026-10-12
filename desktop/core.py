@@ -18,12 +18,28 @@ DEFAULTS = {
     "remove_fillers": True,
     "polish_with_ai": False,           # rewrite dictation with the local model (slower on CPU)
     "speak_replies": True,
+    "agent_engine": "builtin",         # builtin = direct to Ollama (fast) | hermes = full Hermes agent in WSL
     "agent_url": "http://localhost:8642/v1",
     "agent_key": "",
     "ollama_url": "http://localhost:11434/v1",
     "ollama_model": "gemma4:e4b",
     "dictionary": {"hermes": "Hermes", "awaz": "Awaaz", "olama": "Ollama"},
 }
+
+LOG = Path(__file__).parent / "logs" / "awaaz.log"
+
+
+def log(msg):
+    """Append a timestamped line to desktop/logs/awaaz.log (kept small: trimmed past 1 MB)."""
+    try:
+        LOG.parent.mkdir(exist_ok=True)
+        if LOG.exists() and LOG.stat().st_size > 1_000_000:
+            LOG.write_text(LOG.read_text(encoding="utf-8", errors="replace")[-200_000:], encoding="utf-8")
+        with LOG.open("a", encoding="utf-8") as f:
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + str(msg) + "\n")
+    except OSError:
+        pass
+
 
 FILLERS = re.compile(r"\b(?:um+|uh+|er+|erm|hmm+|uhm+)\b[,.]?\s*", re.I)
 
@@ -164,13 +180,58 @@ def chat_stream(base_url, key, messages, model="hermes-agent", timeout=600):
                 yield delta
 
 
+def ollama_root(url):
+    """'http://localhost:11434/v1' -> 'http://localhost:11434' (native API lives at the root)."""
+    return re.sub(r"/v1/?$", "", url.rstrip("/"))
+
+
+def ollama_chat_stream(url, model, messages, tools=None, timeout=600):
+    """Stream Ollama's native chat. Yields ('delta', text) and ('tool_calls', [...]).
+
+    think=False skips the model's long hidden reasoning; keep_alive keeps it loaded between
+    questions; a 4k context keeps prompt processing quick on a CPU.
+    """
+    payload = {"model": model, "messages": messages, "stream": True, "think": False,
+               "keep_alive": "30m", "options": {"num_ctx": 4096, "temperature": 0.3}}
+    if tools:
+        payload["tools"] = tools
+    with _post(ollama_root(url) + "/api/chat", payload, timeout=timeout) as r:
+        for raw in r:
+            try:
+                chunk = json.loads(raw)
+            except ValueError:
+                continue
+            if chunk.get("error"):
+                raise OSError(chunk["error"])
+            msg = chunk.get("message") or {}
+            if msg.get("tool_calls"):
+                yield "tool_calls", msg["tool_calls"]
+            if msg.get("content"):
+                yield "delta", msg["content"]
+            if chunk.get("done"):
+                return
+
+
+def ollama_has_model(url, model, timeout=3):
+    with urllib.request.urlopen(ollama_root(url) + "/api/tags", timeout=timeout) as r:
+        names = {m.get("name") for m in json.load(r).get("models", [])}
+    return model in names or f"{model}:latest" in names
+
+
+def ollama_warm(url, model, timeout=600):
+    """Load the model into memory now so the first question is fast."""
+    with _post(ollama_root(url) + "/api/generate", {"model": model, "keep_alive": "30m"}, timeout=timeout) as r:
+        r.read()
+
+
 def polish(base_url, model, text, timeout=120):
     """Rewrite dictation into clean prose with the local model; returns original text on any failure."""
     prompt = ("Clean up this dictated text: fix punctuation and grammar, remove repetitions, keep the "
               "speaker's language (English, Hindi or Hinglish) and meaning. Reply with the text only.\n\n" + text)
     try:
-        with _post(base_url.rstrip("/") + "/chat/completions",
-                   {"model": model, "temperature": 0, "messages": [{"role": "user", "content": prompt}]},
+        with _post(ollama_root(base_url) + "/v1/chat/completions",
+                   {"model": model, "temperature": 0, "reasoning_effort": "none",
+                    "messages": [{"role": "user", "content": prompt}]},
                    timeout=timeout) as r:
             out = json.load(r)["choices"][0]["message"]["content"].strip()
         out = re.sub(r"<think>.*?</think>", "", out, flags=re.S).strip()

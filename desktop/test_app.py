@@ -74,7 +74,33 @@ class EngineTest(unittest.TestCase):
         self.assertIn("Send the invoice to Awaaz team", self.events("voice_ask")[0])
         self.assertEqual(self.e.voice_secs, 2.5)
 
+    def test_builtin_agent_runs_tool_then_answers(self):
+        rounds = iter([
+            [("tool_calls", [{"function": {"name": "add_reminder", "arguments": {"date": "2026-10-13", "time": "09:00", "text": "Send invoice"}}}])],
+            [("delta", "Done, "), ("delta", "reminder added.")],
+        ])
+        seen = []
+        def fake_stream(url, model, msgs, tools_):
+            seen.append([m["role"] for m in msgs])
+            return iter(next(rounds))
+        with tempfile.TemporaryDirectory() as ws, mock.patch.object(app.tools, "WORKSPACE", Path(ws)), \
+                mock.patch.object(core, "ollama_chat_stream", fake_stream):
+            self.e.chat([{"role": "user", "content": "kal 9 baje invoice reminder"}])
+            self.assertIn("- 2026-10-13 09:00 Send invoice", (Path(ws) / "reminders.md").read_text())
+        self.assertEqual(seen[1][-2:], ["assistant", "tool"])          # tool result fed back to the model
+        self.assertEqual(self.e.history.list()[0]["reply"], "Done, reminder added.")
+        self.assertTrue(self.events("chat_done"))
+
+    def test_builtin_offline_message(self):
+        def offline(*a, **k):
+            raise urllib.error.URLError("refused")
+            yield
+        with mock.patch.object(core, "ollama_chat_stream", offline):
+            self.e.chat([{"role": "user", "content": "hi"}])
+        self.assertIn("Can't reach Ollama", self.events("chat_error")[-1])
+
     def test_chat_success_and_errors(self):
+        self.e.settings["agent_engine"] = "hermes"
         with mock.patch.object(core, "chat_stream", lambda *a, **k: iter(["Hi", " there"])):
             self.e.chat([{"role": "user", "content": "hello"}])
         self.assertEqual(len(self.events("chat_delta")), 2)
@@ -85,14 +111,14 @@ class EngineTest(unittest.TestCase):
             yield
         with mock.patch.object(core, "chat_stream", boom):
             self.e.chat([{"role": "user", "content": "hello"}])
-        self.assertIn("Agent key rejected", self.events("chat_error")[-1])
+        self.assertIn("Hermes rejected the key", self.events("chat_error")[-1])
 
         def offline(*a, **k):
             raise urllib.error.URLError("refused")
             yield
         with mock.patch.object(core, "chat_stream", offline):
             self.e.chat([{"role": "user", "content": "hello"}])
-        self.assertIn("Can't reach your agent", self.events("chat_error")[-1])
+        self.assertIn("Can't reach Hermes", self.events("chat_error")[-1])
 
     def test_short_tap_and_api_validation(self):
         self.e.mode, self.e.frames = "dictate", [np.zeros((800, 1), dtype="float32")]

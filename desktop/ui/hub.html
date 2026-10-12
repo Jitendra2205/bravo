@@ -147,7 +147,7 @@
 
     <section id="agent" hidden>
       <div class="row" style="justify-content:space-between;margin-bottom:8px">
-        <div><h1>Agent</h1><p class="sub" style="margin:0">Your local Hermes agent. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
+        <div><h1>Agent</h1><p class="sub" style="margin:0">Your private agent, running on this laptop. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
         <button class="btn" id="new-chat">New chat</button>
       </div>
       <div class="thread" id="thread" aria-live="polite"></div>
@@ -208,10 +208,14 @@
         <label class="toggle"><span><b>Remove filler words</b><br><small style="color:var(--muted)">Drops "um", "uh" and similar.</small></span><input type="checkbox" id="remove_fillers"></label>
         <label class="toggle"><span><b>Polish with local AI</b><br><small style="color:var(--muted)">Cleans grammar and punctuation with Gemma. Adds a few seconds on CPU.</small></span><input type="checkbox" id="polish_with_ai"></label>
         <label class="toggle"><span><b>Speak agent replies</b><br><small style="color:var(--muted)">Uses the offline Windows voice.</small></span><input type="checkbox" id="speak_replies"></label>
-        <div class="field"><label for="agent_url">Agent address</label><input type="text" id="agent_url" spellcheck="false"></div>
-        <div class="field"><label for="agent_key">Agent key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false">
+        <div class="field"><label for="agent_engine">Agent engine</label>
+          <select id="agent_engine"><option value="builtin">Built-in (fast: reminders, daily brief, your files)</option><option value="hermes">Hermes (full agent with memory and skills, slower)</option></select>
+          <span class="help">Built-in talks straight to Ollama. Hermes runs in Ubuntu and needs setup/wsl-setup.sh.</span></div>
+        <div class="field"><label for="ollama_model">Local model</label><input type="text" id="ollama_model" spellcheck="false">
+          <span class="help">gemma4:e4b is balanced. For faster replies run "ollama pull gemma4:e2b" and enter gemma4:e2b here.</span></div>
+        <div class="field"><label for="agent_url">Hermes address</label><input type="text" id="agent_url" spellcheck="false"></div>
+        <div class="field"><label for="agent_key">Hermes key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false">
           <span class="help">Filled in automatically from your Hermes setup. Never shared.</span></div>
-        <div class="field"><label for="ollama_model">Local model for polishing</label><input type="text" id="ollama_model" spellcheck="false"></div>
         <div class="note">Privacy: speech is transcribed on this PC, history is saved in your AppData folder, and nothing is sent online unless you add a cloud model to Hermes yourself.</div>
         <div><button class="btn primary" type="submit">Save</button></div>
       </form>
@@ -348,14 +352,14 @@ window.addEventListener('pywebviewready', boot);
 // Browser preview without the Python app: a fake API with sample data.
 setTimeout(() => { if (!window.pywebview) { window.pywebview = { api: window.__mockApi() }; boot(); } }, 300);
 window.__mockApi = () => {
-  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
+  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
   const hist = [
     { id: 'a', ts: now - 300, mode: 'dictate', words: 19, text: 'Hi Priya, sharing the revised invoice for October. Please confirm the GST number before Friday.' },
     { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Kal subah 9 baje invoice bhejne ka reminder lagao', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },
     { id: 'c', ts: now - 7200, mode: 'dictate', words: 12, text: 'Meeting notes: launch moved to Monday, labels to be printed by Saturday.' },
   ];
   return {
-    get_bootstrap: async () => ({ settings, stats: { words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }, history: hist, status: { mic: 'Speech: Whisper small', micOk: true, agent: 'Agent: connected', agentOk: true } }),
+    get_bootstrap: async () => ({ settings, stats: { words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }, history: hist, status: { mic: 'Speech: Whisper small', micOk: true, agent: 'Agent: gemma4:e4b (local)', agentOk: true } }),
     get_stats: async () => ({ words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }),
     list_history: async (q) => hist.filter((e) => !q || e.text.toLowerCase().includes(q.toLowerCase())),
     delete_history: async () => true, clear_history: async () => true, copy_text: async () => true, stop_speaking: async () => true,

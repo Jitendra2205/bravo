@@ -5,3 +5,4 @@ __pycache__/
 eval/voice/*.wav
 eval/voice/*.mp3
 eval/voice/*.m4a
+desktop/logs/

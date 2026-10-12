@@ -16,8 +16,9 @@ import webview
 from faster_whisper import WhisperModel
 
 import core
+import tools
 
-UI = Path(__file__).parent / "ui"
+UI =Path(__file__).parent / "ui"
 SR = 16000
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
@@ -72,26 +73,46 @@ class Engine:
             self.model_name = name
             self.emit("status", {"mic": f"Speech: Whisper {name}", "micOk": True})
         except Exception as e:  # download or load failure must not kill the app
+            core.log(f"speech model {name} failed: {e!r}")
             self.emit("status", {"mic": f"Speech model failed: {e}", "micOk": False})
 
     def agent_health(self):
-        url = self.settings["agent_url"].rstrip("/") + "/health"
+        s = self.settings
         try:
-            with urllib.request.urlopen(url, timeout=2) as r:
+            if s["agent_engine"] == "builtin":
+                return core.ollama_has_model(s["ollama_url"], s["ollama_model"])
+            with urllib.request.urlopen(s["agent_url"].rstrip("/") + "/health", timeout=2) as r:
                 return r.status == 200
-        except OSError:
+        except (OSError, ValueError):
             return False
 
+    def agent_label(self, ok):
+        s = self.settings
+        if s["agent_engine"] == "builtin":
+            return f"Agent: {s['ollama_model']} (local)" if ok else "Agent: Ollama not running"
+        return "Agent: Hermes connected" if ok else "Agent: Hermes starting…" if self.gateway else "Agent: Hermes offline"
+
     def agent_watch(self):
-        if not self.settings["agent_key"]:
-            key = self.read_hermes_key()
-            if key:
-                self.settings = core.save_settings({**self.settings, "agent_key": key})
-        if not self.agent_health():
-            self.start_gateway()
+        warmed = None
         while True:
+            s = self.settings
+            if s["agent_engine"] == "hermes" and not self.gateway and not self.agent_health():
+                if not s["agent_key"]:
+                    key = self.read_hermes_key()
+                    if key:
+                        self.settings = core.save_settings({**s, "agent_key": key})
+                self.start_gateway()
             ok = self.agent_health()
-            self.emit("status", {"agent": "Agent: connected" if ok else "Agent: offline (starting…)" if self.gateway else "Agent: offline", "agentOk": ok})
+            if ok and s["agent_engine"] == "builtin" and warmed != s["ollama_model"]:
+                warmed = s["ollama_model"]
+                self.emit("status", {"agent": f"Agent: loading {warmed}…", "agentOk": False})
+                try:
+                    t = time.monotonic()
+                    core.ollama_warm(s["ollama_url"], warmed)
+                    core.log(f"model {warmed} loaded in {time.monotonic() - t:.1f}s")
+                except OSError as e:
+                    core.log(f"warm-up failed: {e}")
+            self.emit("status", {"agent": self.agent_label(ok), "agentOk": ok})
             time.sleep(15)
 
     def read_hermes_key(self):
@@ -105,9 +126,13 @@ class Engine:
     def start_gateway(self):
         # Runs Hermes' API server inside WSL for as long as Awaaz is open.
         try:
+            core.LOG.parent.mkdir(exist_ok=True)
+            out = (core.LOG.parent / "hermes-gateway.log").open("a", encoding="utf-8")
             self.gateway = subprocess.Popen(["wsl.exe", "-e", "bash", "-lc", "hermes gateway"],
-                                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=NO_WINDOW)
-        except OSError:
+                                            stdout=out, stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+            core.log("started hermes gateway in WSL")
+        except OSError as e:
+            core.log(f"could not start hermes gateway: {e}")
             self.gateway = None
 
     # ---------- recording
@@ -166,6 +191,7 @@ class Engine:
         try:
             text = self.transcribe(audio)
         except Exception as e:
+            core.log(f"transcription failed: {e!r}")
             self.pill_flash("error", mode, "Transcription failed")
             self.emit("status", {"mic": f"Speech error: {e}", "micOk": False})
             return
@@ -197,23 +223,68 @@ class Engine:
             threading.Timer(0.6, lambda: pyperclip.copy(old)).start()
 
     # ---------- agent
-    def chat(self, messages):
+    def builtin_reply(self, messages):
+        """Direct Ollama chat with Awaaz's own tools. Returns the final reply text."""
+        s = self.settings
+        system = ("You are Awaaz, a fast private assistant running on the owner's laptop. "
+                  f"Today is {time.strftime('%A %Y-%m-%d')}, time {time.strftime('%H:%M')}. "
+                  "Reply in 1-4 short sentences, in the language the owner used (English, Hindi or Hinglish). "
+                  "Use the tools for reminders, the daily brief and files in the AgentWork folder; never invent their contents. "
+                  "After a tool runs, confirm what you did in one sentence.")
+        msgs = [{"role": "system", "content": system}] + messages
+        reply = ""
+        for _ in range(4):                 # at most 3 tool rounds, then a final answer
+            content, calls = "", []
+            for kind, val in core.ollama_chat_stream(s["ollama_url"], s["ollama_model"], msgs, tools.SPECS):
+                if kind == "delta":
+                    content += val
+                    self.emit("chat_delta", val)
+                else:
+                    calls += val
+            reply += content
+            if not calls:
+                return reply
+            msgs.append({"role": "assistant", "content": content, "tool_calls": calls})
+            for c in calls:
+                fn = c.get("function", {})
+                result = tools.run(fn.get("name"), fn.get("arguments"))
+                core.log(f"tool {fn.get('name')} -> {result[:120]!r}")
+                msgs.append({"role": "tool", "content": result, "tool_name": fn.get("name")})
+        return reply
+
+    def hermes_reply(self, messages):
         s = self.settings
         reply = ""
+        for delta in core.chat_stream(s["agent_url"], s["agent_key"], messages):
+            reply += delta
+            self.emit("chat_delta", delta)
+        return reply
+
+    def chat(self, messages):
+        s = self.settings
+        started = time.monotonic()
+        builtin = s["agent_engine"] == "builtin"
         try:
-            for delta in core.chat_stream(s["agent_url"], s["agent_key"], messages):
-                reply += delta
-                self.emit("chat_delta", delta)
+            reply = self.builtin_reply(messages) if builtin else self.hermes_reply(messages)
         except urllib.error.HTTPError as e:
-            msg = "Agent key rejected. Re-run setup/wsl-setup.sh, then restart Awaaz." if e.code == 401 else f"Agent error {e.code}."
+            core.log(f"agent HTTP {e.code}: {e}")
+            if builtin and e.code == 404:
+                msg = f"The model {s['ollama_model']} isn't installed. In PowerShell run: ollama pull {s['ollama_model']}"
+            elif e.code == 401:
+                msg = "Hermes rejected the key. Re-run setup/wsl-setup.sh, then restart Awaaz, or switch Settings > Agent engine to Built-in."
+            else:
+                msg = f"Agent error {e.code}. Details are in desktop/logs/awaaz.log."
             self.emit("chat_error", msg)
             self.pill_flash("error", "agent", "Agent error")
             return
-        except OSError:
-            self.emit("chat_error", "Can't reach your agent yet. It starts with Awaaz; wait a few seconds and try again. "
-                                    "If it keeps failing, open Ubuntu and run: hermes gateway")
+        except OSError as e:
+            core.log(f"agent unreachable ({s['agent_engine']}): {e}")
+            msg = ("Can't reach Ollama. Open the Ollama app from the Start menu (it should show in the taskbar tray), then try again."
+                   if builtin else "Can't reach Hermes. Switch Settings > Agent engine to Built-in, or open Ubuntu and run: hermes gateway")
+            self.emit("chat_error", msg)
             self.pill_flash("error", "agent", "Agent offline")
             return
+        core.log(f"reply in {time.monotonic() - started:.1f}s ({s['agent_engine']}, {len(reply)} chars)")
         self.emit("chat_done")
         self.history.add("agent", messages[-1]["content"], self.voice_secs, reply=reply)
         self.voice_secs = 0.0
