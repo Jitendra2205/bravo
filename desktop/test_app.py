@@ -19,11 +19,21 @@ stubs = {
     "sounddevice": types.SimpleNamespace(InputStream=None),
     "webview": types.SimpleNamespace(),
     "faster_whisper": types.SimpleNamespace(WhisperModel=None),
+    "tkinter": types.SimpleNamespace(Tk=None, Canvas=None, TclError=Exception),
 }
 sys.modules.update(stubs)
 sys.path.insert(0, str(Path(__file__).parent))
 import app   # noqa: E402
 import core  # noqa: E402
+
+
+class FakePill:
+    def __init__(self):
+        self.states, self.levels = [], []
+    def set_state(self, state, mode="dictate", text="", sub=""):
+        self.states.append(state)
+    def set_level(self, v):
+        self.levels.append(v)
 
 
 class FakeWindow:
@@ -48,7 +58,7 @@ class EngineTest(unittest.TestCase):
         with mock.patch.object(core, "APP_DIR", Path(self.tmp.name)):
             self.e = app.Engine()
         self.e.history = core.History(Path(self.tmp.name) / "h.jsonl")
-        self.e.hub, self.e.pill = FakeWindow(), FakeWindow()
+        self.e.hub, self.e.pill = FakeWindow(), FakePill()
         self.e.model = FakeModel()
         self.e.settings["speak_replies"] = False
         sent.clear()
@@ -113,6 +123,19 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(seen[0][:2], seen[1][:2])     # identical system prompt + tools -> cache hit
         self.assertEqual((seen[0][2], seen[1][2]), (1, None))
 
+    def test_close_previous_copy_only_kills_python(self):
+        calls = []
+        def fake_run(cmd, **kw):
+            calls.append(cmd[0])
+            out = "notepad.exe 4242" if cmd[0] == "tasklist" else ""
+            return types.SimpleNamespace(stdout=out)
+        pid = Path(self.tmp.name) / "awaaz.pid"
+        pid.write_text("4242")
+        with mock.patch.object(app.subprocess, "run", fake_run):
+            app.close_previous_copy(pid)
+        self.assertEqual(calls, ["tasklist"])                    # not python -> left alone
+        self.assertEqual(pid.read_text(), str(app.os.getpid()))
+
     def test_builtin_offline_message(self):
         def offline(*a, **k):
             raise urllib.error.URLError("refused")
@@ -146,7 +169,7 @@ class EngineTest(unittest.TestCase):
         self.e.mode, self.e.frames = "dictate", [np.zeros((800, 1), dtype="float32")]
         self.e.stream = types.SimpleNamespace(stop=lambda: None, close=lambda: None)
         self.e.stop("dictate")
-        self.assertIn('"state": "idle"', self.e.pill.js[-1])     # 0.05 s tap ignored
+        self.assertEqual(self.e.pill.states[-1], "idle")          # 0.05 s tap ignored
         api = app.Api(self.e)
         self.assertFalse(api.send_chat("not a list"))
         self.assertEqual(json.loads(json.dumps(api.get_bootstrap()))["stats"]["words_total"], 0)

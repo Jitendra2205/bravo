@@ -33,6 +33,7 @@ from faster_whisper import WhisperModel
 
 import core
 import tools
+from pill import Pill
 
 UI = Path(__file__).parent / "ui"
 BRIEF_RE = re.compile(r"\b(daily\s+)?brief\b|\baaj\s+ka\s+(plan|kaam)\b", re.I)
@@ -77,7 +78,7 @@ class Engine:
 
     def pill_state(self, state, mode="dictate", text="", sub=""):
         if self.pill:
-            self.pill.evaluate_js(f"setState({json.dumps(dict(state=state, mode=mode, text=text, sub=sub))})")
+            self.pill.set_state(state, mode, text, sub)
 
     def pill_flash(self, state, mode, text="", secs=1.4):
         self.pill_state(state, mode, text)
@@ -209,7 +210,7 @@ class Engine:
         now = time.monotonic()
         if now - self.last_level > 0.05 and self.pill:
             self.last_level = now
-            self.pill.evaluate_js(f"setLevel({float(np.sqrt(np.mean(indata ** 2))):.4f})")
+            self.pill.set_level(float(np.sqrt(np.mean(indata ** 2))))
 
     def stop(self, mode):
         with self.lock:
@@ -436,19 +437,32 @@ class Api:
         return True
 
 
+def close_previous_copy(pid_file=None):
+    """Only one Awaaz at a time: two copies would both paste every dictation.
+    Kills the PID we recorded last time, but only if that PID is still a Python process."""
+    pid_file = Path(pid_file or core.APP_DIR / "awaaz.pid")
+    try:
+        old = int(pid_file.read_text().strip())
+    except (OSError, ValueError):
+        old = 0
+    if old and old != os.getpid():
+        found = subprocess.run(["tasklist", "/FI", f"PID eq {old}", "/NH"], capture_output=True, text=True,
+                               creationflags=NO_WINDOW).stdout.lower()
+        if "python" in found:
+            subprocess.run(["taskkill", "/F", "/PID", str(old)], capture_output=True, creationflags=NO_WINDOW)
+            core.log(f"closed previous Awaaz (pid {old})")
+    pid_file.parent.mkdir(parents=True, exist_ok=True)
+    pid_file.write_text(str(os.getpid()))
+
+
 def main():
-    # Only one Awaaz at a time: two copies would both paste every dictation.
-    subprocess.run(["taskkill", "/F", "/FI", "WINDOWTITLE eq Awaaz pill"], capture_output=True, creationflags=NO_WINDOW)
+    close_previous_copy()
     engine = Engine()
     # ?v=<mtime> stops WebView2 from showing a cached copy after an update
     ui = lambda name: (UI / name).as_uri() + f"?v={int((UI / name).stat().st_mtime)}"
     engine.hub = webview.create_window("Awaaz", url=ui("hub.html"), js_api=Api(engine),
                                        width=1040, height=720, min_size=(720, 520))
-    screen = webview.screens[0]
-    w, h = 300, 40
-    engine.pill = webview.create_window("Awaaz pill", url=ui("pill.html"), width=w, height=h, min_size=(w, h),
-                                        x=(screen.width - w) // 2, y=screen.height - h - 64,
-                                        frameless=True, on_top=True, focus=False, background_color="#161412")
+    engine.pill = Pill()
 
     def on_closed():
         # shortcut: no tray icon; closing the hub quits Awaaz. Add pystray if you want it to live in the tray.
