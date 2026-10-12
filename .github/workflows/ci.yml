@@ -9,6 +9,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m unittest discover eval
+      - run: pip install numpy && python -m unittest discover -s desktop
       - run: python skills/daily-brief/brief.py --self-test
       - run: bash -n setup/wsl-setup.sh
       - name: No secrets committed

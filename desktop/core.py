@@ -1,0 +1,179 @@
+"""Awaaz Desktop core: settings, history, text cleanup and agent client. Stdlib only, OS-independent."""
+import json
+import os
+import re
+import threading
+import time
+import urllib.request
+import uuid
+from pathlib import Path
+
+APP_DIR = Path(os.getenv("AWAAZ_HOME") or Path(os.getenv("APPDATA") or Path.home()) / "Awaaz")
+
+DEFAULTS = {
+    "dictate_hotkey": "right ctrl",
+    "agent_hotkey": "right alt",
+    "whisper_model": "small",          # tiny | base | small | medium
+    "language": "auto",                # auto | en | hi
+    "remove_fillers": True,
+    "polish_with_ai": False,           # rewrite dictation with the local model (slower on CPU)
+    "speak_replies": True,
+    "agent_url": "http://localhost:8642/v1",
+    "agent_key": "",
+    "ollama_url": "http://localhost:11434/v1",
+    "ollama_model": "gemma4:e4b",
+    "dictionary": {"hermes": "Hermes", "awaz": "Awaaz", "olama": "Ollama"},
+}
+
+FILLERS = re.compile(r"\b(?:um+|uh+|er+|erm|hmm+|uhm+)\b[,.]?\s*", re.I)
+
+
+def load_settings(path=None):
+    path = Path(path or APP_DIR / "settings.json")
+    s = json.loads(json.dumps(DEFAULTS))
+    if path.exists():
+        try:
+            saved = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError:
+            saved = {}
+        for k, v in saved.items():
+            if k in DEFAULTS and type(v) is type(DEFAULTS[k]):
+                s[k] = v
+    return s
+
+
+def save_settings(settings, path=None):
+    path = Path(path or APP_DIR / "settings.json")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    clean = {k: settings[k] for k in DEFAULTS if k in settings and type(settings[k]) is type(DEFAULTS[k])}
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(clean, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp.replace(path)  # atomic, so a crash never leaves half-written settings
+    return load_settings(path)
+
+
+def clean_text(text, dictionary=None, remove_fillers=True):
+    """Tidy raw transcription: fillers out, custom words fixed, spacing and first letter."""
+    t = text.strip()
+    if remove_fillers:
+        t = FILLERS.sub("", t)
+    for wrong, right in (dictionary or {}).items():
+        t = re.sub(rf"\b{re.escape(wrong)}\b", right, t, flags=re.I)
+    t = re.sub(r"\s+([,.!?])", r"\1", re.sub(r"\s{2,}", " ", t)).strip()
+    return t[:1].upper() + t[1:] if t else t
+
+
+def strip_markdown(text):
+    """Plain text for speaking aloud."""
+    t = re.sub(r"```.*?```", " code block ", text, flags=re.S)
+    t = re.sub(r"`([^`]*)`", r"\1", t)
+    t = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", t)
+    t = re.sub(r"^\s{0,3}(#{1,6}|[-*+]|\d+\.)\s+", "", t, flags=re.M)
+    t = re.sub(r"[*_~>|]", "", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+class History:
+    """Append-only JSONL log of dictations and agent turns."""
+
+    def __init__(self, path=None):
+        self.path = Path(path or APP_DIR / "history.jsonl")
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
+
+    def _read(self):
+        if not self.path.exists():
+            return []
+        out = []
+        for line in self.path.read_text(encoding="utf-8").splitlines():
+            try:
+                out.append(json.loads(line))
+            except ValueError:
+                continue  # skip a corrupt line rather than lose the whole history
+        return out
+
+    def add(self, mode, text, audio_secs=0.0, reply=""):
+        entry = {"id": uuid.uuid4().hex[:12], "ts": time.time(), "mode": mode, "text": text,
+                 "words": len(text.split()), "secs": round(audio_secs, 2), "reply": reply}
+        with self._lock, self.path.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+        return entry
+
+    def list(self, limit=200, query=""):
+        items = self._read()[::-1]
+        if query:
+            q = query.lower()
+            items = [e for e in items if q in e["text"].lower() or q in e.get("reply", "").lower()]
+        return items[:limit]
+
+    def _rewrite(self, items):
+        tmp = self.path.with_suffix(".tmp")
+        tmp.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in items), encoding="utf-8")
+        tmp.replace(self.path)
+
+    def delete(self, entry_id):
+        with self._lock:
+            self._rewrite([e for e in self._read() if e["id"] != entry_id])
+
+    def clear(self):
+        with self._lock:
+            self._rewrite([])
+
+    def stats(self, now=None):
+        items = self._read()
+        now = now or time.time()
+        today = time.strftime("%Y-%m-%d", time.localtime(now))
+        dict_items = [e for e in items if e["mode"] == "dictate"]
+        words = sum(e["words"] for e in dict_items)
+        secs = sum(e["secs"] for e in dict_items)
+        wpm = round(words / secs * 60) if secs else 0
+        typing_secs = words / 40 * 60  # 40 wpm average typing speed
+        return {
+            "words_total": words,
+            "words_today": sum(e["words"] for e in dict_items
+                               if time.strftime("%Y-%m-%d", time.localtime(e["ts"])) == today),
+            "wpm": wpm,
+            "minutes_saved": max(0, round((typing_secs - secs) / 60)),
+            "agent_turns": sum(1 for e in items if e["mode"] == "agent"),
+        }
+
+
+def _post(url, payload, key="", timeout=300):
+    req = urllib.request.Request(url, data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {key or 'local'}"})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+def chat_stream(base_url, key, messages, model="hermes-agent", timeout=600):
+    """Yield text deltas from an OpenAI-compatible streaming chat endpoint (Hermes API server)."""
+    with _post(base_url.rstrip("/") + "/chat/completions",
+               {"model": model, "messages": messages, "stream": True}, key, timeout) as r:
+        for raw in r:
+            line = raw.decode("utf-8", "replace").strip()
+            if not line.startswith("data:"):
+                continue
+            data = line[5:].strip()
+            if data == "[DONE]":
+                return
+            try:
+                delta = json.loads(data)["choices"][0].get("delta", {}).get("content")
+            except (ValueError, KeyError, IndexError):
+                continue
+            if delta:
+                yield delta
+
+
+def polish(base_url, model, text, timeout=120):
+    """Rewrite dictation into clean prose with the local model; returns original text on any failure."""
+    prompt = ("Clean up this dictated text: fix punctuation and grammar, remove repetitions, keep the "
+              "speaker's language (English, Hindi or Hinglish) and meaning. Reply with the text only.\n\n" + text)
+    try:
+        with _post(base_url.rstrip("/") + "/chat/completions",
+                   {"model": model, "temperature": 0, "messages": [{"role": "user", "content": prompt}]},
+                   timeout=timeout) as r:
+            out = json.load(r)["choices"][0]["message"]["content"].strip()
+        out = re.sub(r"<think>.*?</think>", "", out, flags=re.S).strip()
+        return out or text
+    except (OSError, ValueError, KeyError, IndexError):
+        return text

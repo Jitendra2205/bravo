@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Awaaz</title>
+<style>
+  :root {
+    --bg: #faf8f5; --side: #f2eee8; --card: #ffffff; --ink: #1c1a17; --muted: #5f5a52; --line: #e6e0d6;
+    --accent: #c2410c; --accent-ink: #ffffff; --accent-soft: #fdeee6; --agent: #6d28d9; --agent-soft: #f1ebfd;
+    --ok: #15803d; --err: #b91c1c; --focus: #1c1a17; --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141311; --side: #1b1916; --card: #201e1a; --ink: #eeeae4; --muted: #a8a196; --line: #2f2c27;
+            --accent: #fb923c; --accent-ink: #1c1a17; --accent-soft: #3a2416; --agent: #a78bfa; --agent-soft: #2a2140;
+            --ok: #4ade80; --err: #f87171; --focus: #eeeae4; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+               font: 15px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+  .app { display: grid; grid-template-columns: 216px 1fr; height: 100%; }
+  aside { background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 20px 12px; gap: 4px; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 18px; font-weight: 650; font-size: 17px; }
+  .brand svg { color: var(--accent); }
+  nav button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px;
+               background: transparent; color: var(--muted); cursor: pointer; text-align: left; transition: background 150ms, color 150ms; }
+  nav button:hover { background: var(--card); color: var(--ink); }
+  nav button[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 var(--line); }
+  .status { margin-top: auto; padding: 12px; font-size: 12.5px; color: var(--muted); display: grid; gap: 6px; }
+  .status span { display: flex; align-items: center; gap: 8px; }
+  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
+  .led.on { background: var(--ok); } .led.off { background: var(--err); }
+  main { overflow-y: auto; padding: 36px 44px; }
+  [hidden] { display: none !important; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; font-weight: 650; }
+  h2 { font-size: 15px; margin: 32px 0 12px; font-weight: 600; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .keycard { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: flex; gap: 14px; align-items: center; }
+  .keycard .ico { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
+  .keycard.agent .ico { background: var(--agent-soft); color: var(--agent); }
+  .keycard b { display: block; font-weight: 600; }
+  .keycard small { color: var(--muted); font-size: 13px; }
+  kbd { font: 600 12px/1 ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 3px 7px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--bg); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .stat .n { font-size: 28px; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
+  .stat .l { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .list { display: grid; gap: 8px; }
+  .item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+  .item .meta { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+  .badge { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .badge.agent { background: var(--agent-soft); color: var(--agent); }
+  .item .text { grid-column: 1 / -1; white-space: pre-wrap; word-break: break-word; }
+  .item .reply { grid-column: 1 / -1; color: var(--muted); font-size: 14px; border-left: 2px solid var(--line); padding-left: 10px; white-space: pre-wrap; }
+  .acts { display: flex; gap: 2px; }
+  .icon-btn { border: 0; background: transparent; color: var(--muted); width: 32px; height: 32px; border-radius: 7px; display: grid; place-items: center; cursor: pointer; transition: background 150ms, color 150ms; }
+  .icon-btn:hover { background: var(--bg); color: var(--ink); }
+  .empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); }
+  .btn { border: 1px solid var(--line); background: var(--card); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: background 150ms; min-height: 38px; }
+  .btn:hover { background: var(--bg); }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  .btn.primary:hover { filter: brightness(1.06); }
+  .btn:disabled { opacity: 0.5; cursor: default; }
+  .search { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; flex: 1; }
+  .search input { border: 0; background: transparent; outline: none; padding: 9px 0; flex: 1; }
+  .row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
+  /* chat */
+  #agent { display: flex; flex-direction: column; height: 100%; }
+  #agent:not([hidden]) { display: flex; }
+  .thread { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 4px 2px 16px; min-height: 200px; }
+  .msg { max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; word-break: break-word; }
+  .msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+  .msg.bot { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+  .msg.err { border-color: var(--err); color: var(--err); }
+  .typing::after { content: "▍"; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .composer { display: flex; gap: 10px; align-items: flex-end; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 14px; }
+  .composer textarea { flex: 1; border: 0; background: transparent; resize: none; outline: none; max-height: 140px; padding: 6px 0; }
+  .send { background: var(--accent); color: var(--accent-ink); border: 0; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; }
+  .send:disabled { opacity: 0.45; cursor: default; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; color: var(--muted); transition: color 150ms, border-color 150ms; }
+  .chip:hover { color: var(--ink); border-color: var(--muted); }
+  /* forms */
+  .form { display: grid; gap: 18px; max-width: 620px; }
+  .field { display: grid; gap: 6px; }
+  .field label { font-weight: 600; font-size: 14px; }
+  .field .help { color: var(--muted); font-size: 13px; }
+  .field input[type=text], .field input[type=password], .field select { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 38px; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+  .toggle input { width: 40px; height: 22px; accent-color: var(--accent); cursor: pointer; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
+  .note { font-size: 13px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 200ms; pointer-events: none; }
+  .toast.show { opacity: 1; }
+  .dict-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
+  .dict-row input { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  @media (max-width: 720px) { .app { grid-template-columns: 1fr; } aside { display: none; } main { padding: 24px 16px; } .two { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 8v8M19 11v2"/></svg>
+      Awaaz
+    </div>
+    <nav aria-label="Main">
+      <button data-page="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
+      <button data-page="agent"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Agent</button>
+      <button data-page="history"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>History</button>
+      <button data-page="dictionary"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Dictionary</button>
+      <button data-page="settings"><svg viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</button>
+    </nav>
+    <div class="status" aria-live="polite">
+      <span><i id="led-mic" class="led"></i><span id="st-mic">Speech model loading</span></span>
+      <span><i id="led-agent" class="led"></i><span id="st-agent">Agent: checking</span></span>
+      <span><i class="led on"></i>Runs on this PC</span>
+    </div>
+  </aside>
+
+  <main>
+    <section id="home">
+      <h1 id="greet">Namaste</h1>
+      <p class="sub">Speak anywhere on your PC. Everything stays on this laptop.</p>
+      <div class="keys">
+        <div class="keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
+          <div><b>Dictate anywhere</b><small>Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. Text appears where your cursor is.</small></div></div>
+        <div class="keycard agent"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div><b>Ask your agent</b><small>Hold <kbd id="k-agent">Right Alt</kbd> and ask. Awaaz answers here and out loud.</small></div></div>
+      </div>
+      <h2>Your numbers</h2>
+      <div class="stats">
+        <div class="stat"><div class="n" id="s-today">0</div><div class="l">Words today</div></div>
+        <div class="stat"><div class="n" id="s-total">0</div><div class="l">Words dictated</div></div>
+        <div class="stat"><div class="n" id="s-wpm">0</div><div class="l">Speaking speed (wpm)</div></div>
+        <div class="stat"><div class="n" id="s-saved">0</div><div class="l">Minutes saved vs typing</div></div>
+      </div>
+      <h2>Recent</h2>
+      <div class="list" id="recent"></div>
+    </section>
+
+    <section id="agent" hidden>
+      <div class="row" style="justify-content:space-between;margin-bottom:8px">
+        <div><h1>Agent</h1><p class="sub" style="margin:0">Your local Hermes agent. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
+        <button class="btn" id="new-chat">New chat</button>
+      </div>
+      <div class="thread" id="thread" aria-live="polite"></div>
+      <div class="chips" id="chips">
+        <button class="chip">Run my daily brief</button>
+        <button class="chip">Kal subah 9 baje invoice bhejne ka reminder lagao</button>
+        <button class="chip">Summarise the newest file in my AgentWork folder</button>
+      </div>
+      <form class="composer" id="composer">
+        <label for="msg" class="sr" style="position:absolute;left:-9999px">Message</label>
+        <textarea id="msg" rows="1" placeholder="Message Awaaz… (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button class="send" id="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
+      </form>
+    </section>
+
+    <section id="history" hidden>
+      <h1>History</h1>
+      <p class="sub">Everything you dictated or asked. Stored only on this PC.</p>
+      <div class="row">
+        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="q" type="search" placeholder="Search history" aria-label="Search history"></div>
+        <button class="btn" id="clear">Clear all</button>
+      </div>
+      <div class="list" id="hist"></div>
+    </section>
+
+    <section id="dictionary" hidden>
+      <h1>Dictionary</h1>
+      <p class="sub">Words Awaaz should always spell your way: names, brands, Hinglish terms.</p>
+      <div class="form">
+        <div class="dict-row" style="color:var(--muted);font-size:13px;font-weight:600"><span>When I say</span><span>Write</span><span></span></div>
+        <div id="dict" class="list"></div>
+        <form class="dict-row" id="dict-add">
+          <input id="d-from" placeholder="e.g. anouk" aria-label="Heard as">
+          <input id="d-to" placeholder="e.g. Anouk" aria-label="Write as">
+          <button class="btn primary" type="submit">Add</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="settings" hidden>
+      <h1>Settings</h1>
+      <p class="sub">Changes apply when you press Save.</p>
+      <form class="form" id="settings-form">
+        <div class="two">
+          <div class="field"><label for="dictate_hotkey">Dictate key (hold)</label>
+            <select id="dictate_hotkey"><option>right ctrl</option><option>right alt</option><option>right shift</option><option>caps lock</option><option>f8</option><option>f9</option></select></div>
+          <div class="field"><label for="agent_hotkey">Agent key (hold)</label>
+            <select id="agent_hotkey"><option>right alt</option><option>right ctrl</option><option>right shift</option><option>caps lock</option><option>f9</option><option>f10</option></select></div>
+        </div>
+        <div class="two">
+          <div class="field"><label for="whisper_model">Speech model</label>
+            <select id="whisper_model"><option value="base">Base (fastest)</option><option value="small">Small (balanced)</option><option value="medium">Medium (best Hinglish, slower)</option></select>
+            <span class="help">Downloads once, then works offline.</span></div>
+          <div class="field"><label for="language">Language</label>
+            <select id="language"><option value="auto">Auto-detect</option><option value="en">English</option><option value="hi">Hindi</option></select></div>
+        </div>
+        <label class="toggle"><span><b>Remove filler words</b><br><small style="color:var(--muted)">Drops "um", "uh" and similar.</small></span><input type="checkbox" id="remove_fillers"></label>
+        <label class="toggle"><span><b>Polish with local AI</b><br><small style="color:var(--muted)">Cleans grammar and punctuation with Gemma. Adds a few seconds on CPU.</small></span><input type="checkbox" id="polish_with_ai"></label>
+        <label class="toggle"><span><b>Speak agent replies</b><br><small style="color:var(--muted)">Uses the offline Windows voice.</small></span><input type="checkbox" id="speak_replies"></label>
+        <div class="field"><label for="agent_url">Agent address</label><input type="text" id="agent_url" spellcheck="false"></div>
+        <div class="field"><label for="agent_key">Agent key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false">
+          <span class="help">Filled in automatically from your Hermes setup. Never shared.</span></div>
+        <div class="field"><label for="ollama_model">Local model for polishing</label><input type="text" id="ollama_model" spellcheck="false"></div>
+        <div class="note">Privacy: speech is transcribed on this PC, history is saved in your AppData folder, and nothing is sent online unless you add a cloud model to Hermes yourself.</div>
+        <div><button class="btn primary" type="submit">Save</button></div>
+      </form>
+    </section>
+  </main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const api = () => window.pywebview.api;
+let S = {};          // settings
+let chat = [];       // [{role, content}]
+let streaming = null;
+
+// ---- navigation
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => show(b.dataset.page)));
+function show(page) {
+  document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== page));
+  document.querySelectorAll('nav button').forEach((b) => (b.dataset.page === page ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  if (page === 'history') loadHistory();
+  if (page === 'agent') $('#msg').focus();
+}
+
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1800); }
+const keyName = (k) => k.replace(/\b\w/g, (c) => c.toUpperCase());
+const when = (ts) => new Date(ts * 1000).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+// ---- rendering (textContent only: transcripts are untrusted text)
+function itemEl(e, withActions = true) {
+  const d = document.createElement('div'); d.className = 'item';
+  const meta = document.createElement('div'); meta.className = 'meta';
+  const badge = document.createElement('span'); badge.className = 'badge' + (e.mode === 'agent' ? ' agent' : '');
+  badge.textContent = e.mode === 'agent' ? 'Agent' : 'Dictation';
+  const t = document.createElement('span'); t.textContent = `${when(e.ts)} · ${e.words} words`;
+  meta.append(badge, t); d.append(meta);
+  const acts = document.createElement('div'); acts.className = 'acts';
+  if (withActions) {
+    acts.append(iconBtn('Copy', '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>', async () => { await api().copy_text(e.text); toast('Copied'); }));
+    acts.append(iconBtn('Delete', '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>', async () => { await api().delete_history(e.id); d.remove(); refreshStats(); }));
+  }
+  d.append(acts);
+  const tx = document.createElement('div'); tx.className = 'text'; tx.textContent = e.text; d.append(tx);
+  if (e.reply) { const r = document.createElement('div'); r.className = 'reply'; r.textContent = e.reply; d.append(r); }
+  return d;
+}
+function iconBtn(label, path, fn) {
+  const b = document.createElement('button'); b.className = 'icon-btn'; b.type = 'button'; b.setAttribute('aria-label', label); b.title = label;
+  b.innerHTML = `<svg viewBox="0 0 24 24">${path}</svg>`; b.addEventListener('click', fn); return b;
+}
+function renderList(el, items, emptyText) {
+  el.replaceChildren(...(items.length ? items.map((e) => itemEl(e)) : [Object.assign(document.createElement('div'), { className: 'empty', textContent: emptyText })]));
+}
+function renderStats(st) {
+  $('#s-today').textContent = st.words_today.toLocaleString(); $('#s-total').textContent = st.words_total.toLocaleString();
+  $('#s-wpm').textContent = st.wpm; $('#s-saved').textContent = st.minutes_saved;
+}
+async function refreshStats() { renderStats(await api().get_stats()); }
+async function loadHistory() { renderList($('#hist'), await api().list_history($('#q').value), 'Nothing here yet. Hold your dictate key and say something.'); }
+let qTimer; $('#q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(loadHistory, 200); });
+$('#clear').addEventListener('click', async () => { if (await api().clear_history()) { loadHistory(); refreshStats(); toast('History cleared'); } });
+
+// ---- settings + dictionary
+function fillSettings() {
+  for (const [k, v] of Object.entries(S)) { const el = document.getElementById(k); if (!el) continue; if (el.type === 'checkbox') el.checked = v; else el.value = v; }
+  ['#k-dictate'].forEach((s) => ($(s).textContent = keyName(S.dictate_hotkey)));
+  ['#k-agent', '#k-agent2'].forEach((s) => ($(s).textContent = keyName(S.agent_hotkey)));
+  renderDict();
+}
+$('#settings-form').addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const next = { ...S };
+  for (const k of Object.keys(S)) { const el = document.getElementById(k); if (!el) continue; next[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); }
+  if (next.dictate_hotkey === next.agent_hotkey) { toast('Pick two different keys'); return; }
+  S = await api().save_settings(next); fillSettings(); toast('Saved');
+});
+function renderDict() {
+  const rows = Object.entries(S.dictionary || {}).map(([from, to]) => {
+    const r = document.createElement('div'); r.className = 'dict-row';
+    const a = document.createElement('span'); a.textContent = from; const b = document.createElement('span'); b.textContent = to;
+    r.append(a, b, iconBtn(`Remove ${from}`, '<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>', () => saveDict(from, null))); return r;
+  });
+  $('#dict').replaceChildren(...rows);
+}
+async function saveDict(from, to) {
+  const dictionary = { ...S.dictionary }; if (to === null) delete dictionary[from]; else dictionary[from] = to;
+  S = await api().save_settings({ ...S, dictionary }); renderDict();
+}
+$('#dict-add').addEventListener('submit', (ev) => {
+  ev.preventDefault(); const f = $('#d-from').value.trim().toLowerCase(), t = $('#d-to').value.trim();
+  if (!f || !t) return; saveDict(f, t); $('#d-from').value = $('#d-to').value = ''; $('#d-from').focus();
+});
+
+// ---- agent chat
+function bubble(role, text) { const m = document.createElement('div'); m.className = `msg ${role}`; m.textContent = text; $('#thread').append(m); m.scrollIntoView({ block: 'end' }); return m; }
+function setBusy(b) { $('#send').disabled = b; $('#msg').disabled = b; }
+async function ask(text) {
+  text = text.trim(); if (!text || streaming) return;
+  show('agent'); $('#chips').hidden = true;
+  chat.push({ role: 'user', content: text }); bubble('user', text);
+  streaming = bubble('bot', ''); streaming.classList.add('typing'); setBusy(true);
+  await api().send_chat(chat);
+}
+$('#composer').addEventListener('submit', (ev) => { ev.preventDefault(); const t = $('#msg').value; $('#msg').value = ''; autosize(); ask(t); });
+$('#msg').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('#composer').requestSubmit(); } });
+$('#msg').addEventListener('input', autosize);
+function autosize() { const m = $('#msg'); m.style.height = 'auto'; m.style.height = Math.min(m.scrollHeight, 140) + 'px'; }
+document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => ask(c.textContent)));
+$('#new-chat').addEventListener('click', () => { chat = []; $('#thread').replaceChildren(); $('#chips').hidden = false; api().stop_speaking(); });
+
+// ---- events pushed from Python
+window.Awaaz = {
+  emit(type, data) {
+    if (type === 'chat_delta' && streaming) { streaming.textContent += data; streaming.scrollIntoView({ block: 'end' }); }
+    if (type === 'chat_done' && streaming) { streaming.classList.remove('typing'); chat.push({ role: 'assistant', content: streaming.textContent }); streaming = null; setBusy(false); refreshStats(); }
+    if (type === 'chat_error') { if (streaming) { streaming.classList.remove('typing'); streaming.classList.add('err'); streaming.textContent = data; streaming = null; } setBusy(false); }
+    if (type === 'voice_ask') ask(data);
+    if (type === 'history_added') { refreshStats(); api().list_history('').then((h) => renderList($('#recent'), h.slice(0, 5), '')); }
+    if (type === 'status') {
+      if ('mic' in data) { $('#st-mic').textContent = data.mic; $('#led-mic').className = 'led ' + (data.micOk ? 'on' : data.micOk === false ? 'off' : ''); }
+      if ('agent' in data) { $('#st-agent').textContent = data.agent; $('#led-agent').className = 'led ' + (data.agentOk ? 'on' : 'off'); }
+    }
+  },
+};
+
+async function boot() {
+  const b = await api().get_bootstrap();
+  S = b.settings; fillSettings(); renderStats(b.stats);
+  renderList($('#recent'), b.history.slice(0, 5), 'Your dictations and questions will show up here.');
+  const h = new Date().getHours(); $('#greet').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  Awaaz.emit('status', b.status);
+}
+window.addEventListener('pywebviewready', boot);
+// Browser preview without the Python app: a fake API with sample data.
+setTimeout(() => { if (!window.pywebview) { window.pywebview = { api: window.__mockApi() }; boot(); } }, 300);
+window.__mockApi = () => {
+  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', dictionary: { hermes: 'Hermes', awaz: 'Awaaz', anouk: 'Anouk' } };
+  const hist = [
+    { id: 'a', ts: now - 300, mode: 'dictate', words: 19, text: 'Hi Priya, sharing the revised invoice for October. Please confirm the GST number before Friday.' },
+    { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Kal subah 9 baje invoice bhejne ka reminder lagao', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },
+    { id: 'c', ts: now - 7200, mode: 'dictate', words: 12, text: 'Meeting notes: launch moved to Monday, labels to be printed by Saturday.' },
+  ];
+  return {
+    get_bootstrap: async () => ({ settings, stats: { words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }, history: hist, status: { mic: 'Speech: Whisper small', micOk: true, agent: 'Agent: connected', agentOk: true } }),
+    get_stats: async () => ({ words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }),
+    list_history: async (q) => hist.filter((e) => !q || e.text.toLowerCase().includes(q.toLowerCase())),
+    delete_history: async () => true, clear_history: async () => true, copy_text: async () => true, stop_speaking: async () => true,
+    save_settings: async (s) => (settings = s),
+    send_chat: async () => { const words = 'You have one reminder today: send the invoice to Kavya Traders at 9 am.'.split(' '); let i = 0; const t = setInterval(() => { if (i < words.length) Awaaz.emit('chat_delta', (i ? ' ' : '') + words[i++]); else { clearInterval(t); Awaaz.emit('chat_done'); } }, 60); },
+  };
+};
+</script>
+</body>
+</html>

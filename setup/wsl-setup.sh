@@ -54,6 +54,15 @@ cp "$REPO_DIR/config/SOUL.md" "$HERMES_HOME/SOUL.md"
 cp -r "$REPO_DIR/skills/"* "$HERMES_HOME/skills/"
 # shortcut: assumes Hermes loads user skills from ~/.hermes/skills; if `hermes` doesn't list daily-brief, check the Hermes skills docs for the current path.
 
+step "Enabling the local agent API for Awaaz Desktop (localhost only)"
+ENV_FILE="$HERMES_HOME/.env"
+touch "$ENV_FILE"
+chmod 600 "$ENV_FILE"
+grep -q '^API_SERVER_ENABLED=' "$ENV_FILE" || echo 'API_SERVER_ENABLED=true' >> "$ENV_FILE"
+grep -q '^API_SERVER_HOST=' "$ENV_FILE" || echo 'API_SERVER_HOST=127.0.0.1' >> "$ENV_FILE"
+grep -q '^API_SERVER_KEY=' "$ENV_FILE" || echo "API_SERVER_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(24))')" >> "$ENV_FILE"
+echo "API server enabled on 127.0.0.1:8642 (key stored in $ENV_FILE)"
+
 step "Health check"
 hermes doctor || true
 
@@ -67,4 +76,5 @@ Done. Next:
      (key names per the Hermes voice guide for your version)
   4. Lock it down:          follow config/SECURITY-PRESET.md
   5. Try the skill:         "run my daily brief"
+  6. Desktop app:           double-click desktop\Run-Awaaz.cmd in the awaaz folder on Windows
 EOF

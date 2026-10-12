@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Awaaz pill</title>
+<style>
+  :root { --bg: rgba(22, 20, 18, 0.94); --edge: rgba(255, 255, 255, 0.12); --ink: #f4f1ec; --muted: #b8b1a6;
+          --dictate: #fb923c; --agent: #a78bfa; --ok: #4ade80; --err: #f87171; }
+  html, body { margin: 0; height: 100%; background: transparent; overflow: hidden;
+               font: 500 13px/1 "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; user-select: none; }
+  .wrap { height: 100%; display: grid; place-items: center; }
+  .pill { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 12px; border-radius: 999px;
+          background: var(--bg); border: 1px solid var(--edge); color: var(--ink);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28); transition: opacity 180ms ease, transform 180ms ease; }
+  .pill.idle { opacity: 0.55; height: 10px; padding: 0; width: 48px; gap: 0; }
+  .pill.idle > * { display: none; }
+  .pill.hidden { opacity: 0; transform: translateY(8px); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent, var(--dictate)); flex: none; }
+  .listening .dot { animation: pulse 1.2s ease-in-out infinite; }
+  .bars { display: flex; align-items: center; gap: 3px; height: 22px; }
+  .bars i { width: 3px; height: 4px; border-radius: 2px; background: var(--accent, var(--dictate)); transition: height 70ms linear; }
+  .label { white-space: nowrap; }
+  .hint { color: var(--muted); font-weight: 400; white-space: nowrap; }
+  .spin { width: 14px; height: 14px; border: 2px solid var(--edge); border-top-color: var(--accent, var(--dictate));
+          border-radius: 50%; animation: spin 700ms linear infinite; flex: none; }
+  .agent { --accent: var(--agent); }
+  .done { --accent: var(--ok); }
+  .error { --accent: var(--err); }
+  @keyframes pulse { 50% { opacity: 0.35; } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="pill" class="pill idle" role="status" aria-live="polite">
+    <span id="icon" class="dot"></span>
+    <span id="bars" class="bars" aria-hidden="true"></span>
+    <span id="label" class="label"></span>
+    <span id="hint" class="hint"></span>
+  </div>
+</div>
+<script>
+  const pill = document.getElementById('pill'), icon = document.getElementById('icon'),
+        bars = document.getElementById('bars'), label = document.getElementById('label'), hint = document.getElementById('hint');
+  const N = 14;
+  for (let i = 0; i < N; i++) bars.appendChild(document.createElement('i'));
+  const history = new Array(N).fill(0);
+
+  // Called from Python: state = idle | listening | working | done | error ; mode = dictate | agent
+  window.setState = ({ state, mode = 'dictate', text = '', sub = '' }) => {
+    pill.className = `pill ${state} ${mode === 'agent' ? 'agent' : ''}`;
+    icon.className = state === 'working' ? 'spin' : 'dot';
+    bars.style.display = state === 'listening' ? 'flex' : 'none';
+    const defaults = {
+      listening: mode === 'agent' ? 'Ask Awaaz' : 'Dictating',
+      working: mode === 'agent' ? 'Thinking' : 'Transcribing',
+      done: mode === 'agent' ? 'Reply ready' : 'Pasted',
+      error: 'Something went wrong',
+    };
+    label.textContent = text || defaults[state] || '';
+    hint.textContent = sub || (state === 'listening' ? 'release to finish' : '');
+    if (state !== 'listening') history.fill(0), draw();
+  };
+
+  // Called from Python ~20x/second with mic level 0..1
+  window.setLevel = (v) => { history.shift(); history.push(Math.min(1, v * 6)); draw(); };
+  function draw() { bars.childNodes.forEach((b, i) => { b.style.height = `${4 + history[i] * 18}px`; }); }
+</script>
+</body>
+</html>

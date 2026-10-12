@@ -56,11 +56,21 @@ Requirements: Windows 10 22H2+ or 11, 16 GB RAM, ~40 GB free disk.
 3. **Dictation:** install Handy from its official GitHub releases and pick a local Whisper model.
 4. **Lock it down:** walk through [config/SECURITY-PRESET.md](config/SECURITY-PRESET.md).
 
+## Awaaz Desktop (Wispr Flow-style app)
+
+A small Windows app on top of the agent: a floating pill at the bottom of the screen and a hub window.
+
+- **Hold Right Ctrl** anywhere: speak, release, and the text is typed where your cursor is (local Whisper, filler words removed, your custom spellings applied).
+- **Hold Right Alt**: ask your Hermes agent by voice; the answer streams into the hub and is read aloud with the offline Windows voice.
+- **Hub:** stats (words, speaking speed, minutes saved), agent chat, searchable history, a custom dictionary, and settings (hotkeys, speech model, language, AI polish).
+- Start it by double-clicking `desktop\Run-Awaaz.cmd`. It also starts the Hermes API (localhost only) in WSL.
+
 ## Repo map
 
 | Path | What it is |
 | --- | --- |
 | `setup/` | Windows and WSL setup scripts |
+| `desktop/` | Awaaz Desktop: floating pill, hub UI, hotkeys, local Whisper, agent chat |
 | `config/` | Agent persona and the security preset |
 | `skills/daily-brief/` | Custom skill: morning summary of reminders and changed files |
 | `eval/` | Task-level and speech-to-text evaluation harness |
