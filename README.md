@@ -1,110 +1,135 @@
-# Awaaz — a private voice agent that runs on my laptop for $0
+# Awaaz — a free, private voice agent for your Windows PC
 
-I replaced a $100+/month always-on AI agent and a paid dictation app with a system that runs on a
-16 GB Windows laptop, works offline, and never sends my data anywhere unless I turn that on.
-Then I measured where it holds up and where it doesn't.
+Hold a key, speak in English, Hindi or Hinglish, and Awaaz either types what you said into any app or
+does it for you: opens sites, researches on the web in a real Chrome window, sets reminders, reads your
+screen, drafts emails, runs scheduled jobs, and answers you out loud. You can also message it from your
+phone on Telegram.
 
-> **What I built vs. what I assembled.** The agent framework (Hermes Agent), model runtime (Ollama),
-> speech models (Whisper, NeuTTS) and dictation app (Handy) are open-source projects by others.
-> I designed the system, chose and secured the stack, wrote the setup scripts, the custom skills
-> and the evaluation harness, and ran the comparison. Credits in [NOTICE.md](NOTICE.md).
+It is built for people who want an AI assistant that **runs on their own laptop, costs nothing to run,
+and asks before it does anything risky**.
 
-## What it does
+- **Free:** speech recognition, quick commands and the local model run on your PC. For harder tasks, plug in
+  any OpenAI-compatible key: a free tier (Groq, Gemini, OpenRouter) or a paid one (OpenAI, Claude).
+- **Private by default:** your voice never leaves the PC. History, memory and settings live in your
+  AppData folder. Nothing goes online until you add a cloud key.
+- **Safe to hand the keys to:** commands, emails and calendar invites need your Yes every time, enforced in
+  code. It never types passwords and treats web pages as untrusted text. See [SECURITY.md](SECURITY.md).
 
-- Talk to it, get spoken replies — fully offline
-- Dictate into any Windows app (Wispr Flow-style) with a hotkey
-- Remembers context across sessions; runs scheduled jobs like a 9 am brief
-- Works on files, reminders and (when I enable them) email, calendar and the browser
-- Asks before anything irreversible; every command runs in a sandbox that sees one folder
+## What it can do
 
-## Architecture
+| You say | What happens | Needs |
+| --- | --- | --- |
+| *(hold Right Ctrl)* "Hi Priya, sharing the invoice…" | Typed into whatever app has your cursor, filler words removed | Nothing (local Whisper) |
+| "YouTube kholo", "notepad kholo", "daily brief" | Done in under a second, no AI model involved | Nothing |
+| "Kal subah 9 baje invoice ka reminder lagao" | Reminder saved, announced out loud when it's due | Local model or cloud key |
+| "Open Chrome and find the top 3 AI models this week" | Searches in its own Chrome window, reads the pages, answers with what they say | Cloud key |
+| "Mere screen pe kya hai?" | Looks at your screen and explains it | Cloud key with vision |
+| "Every weekday at 9, give me the top AI news" | Scheduled task, runs on its own | Cloud key |
+| "How much disk space is free?" | Runs a PowerShell command **after you click Yes** | Cloud key |
+| "Summarise my unread emails" / "Add a call tomorrow 3 pm" | Gmail and Calendar through Google's official sign-in, sending **after you click Yes** | Cloud key + Google sign-in |
+| "Make an image of a chai cup at sunrise" | Generated and saved to `AgentWork\images` | Key with an image model |
+| A voice note to your Telegram bot | Answered from your PC, wherever you are | Telegram bot token |
+
+## Quick start (Windows 10/11, 8–16 GB RAM, no GPU needed)
+
+1. Download this repo (green **Code** button → Download ZIP) and unzip it.
+2. Double-click `desktop\Run-Awaaz.cmd`. The first run installs Python packages (about 300 MB) and starts
+   the app.
+3. **Make it fast (recommended, free):** get a free key at [console.groq.com](https://console.groq.com/keys),
+   then in Awaaz go to **Settings → Cloud model**, choose **Groq**, paste the key and press **Save**.
+4. **Optional fully offline brain:** install [Ollama](https://ollama.com/download) and Awaaz downloads the
+   local model (`gemma4:e4b`) by itself. For more speed on older laptops, set the local model to `gemma4:e2b`.
+
+Then hold **Right Ctrl** to dictate, or **Right Alt** to talk to the agent.
+
+## How fast is it?
+
+Measured on the author's laptop (16 GB RAM, CPU only), October 2026:
+
+| Task | Time |
+| --- | --- |
+| Instant command ("YouTube kholo") | 0.4 s |
+| Local model loaded, ready to answer | 2 s after start |
+| Simple question, local model only | 13–20 s |
+| Local model using a tool (e.g. a reminder) | 20–100 s |
+| Web research in Chrome (3–4 pages), cloud model | 23–34 s before the latest speed work |
+
+The local model works, but slowly on a CPU, so a free cloud key is the fast path. While it works, the chat
+shows each step live ("Opening html.duckduckgo.com…").
+
+## How it works
 
 ```
-You (voice / hotkey / keyboard)
-   │
-   ├── Handy ── local Whisper ── types into any Windows app
-   │
-   └── Hermes Agent (WSL2) ── local Whisper (speech in) / NeuTTS (speech out)
-          │      memory, scheduled jobs, approvals
-          ├── Ollama on localhost:11434 ── gemma4:e4b
-          └── Docker sandbox ── sees only C:\AgentWork
-
-Optional, off by default: Telegram bot (phone access), Claude/Gemini API (hard tasks)
+Hold key ─► microphone ─► Whisper (on your PC) ─► text
+                                                   │
+               dictation ◄─────────────────────────┤ agent
+       (pasted into the app                         ▼
+        under your cursor)            instant commands (no model)
+                                                   │
+                                  cloud key set? ──┼── yes ─► your provider (Groq, Gemini, OpenAI, Claude…)
+                                                   │            │  tools: Chrome, screen, files, memory,
+                                                   no           │  schedules, PowerShell*, Gmail*, Calendar*
+                                                   ▼            ▼
+                                       Ollama on localhost   * = asks you first, every time
 ```
 
-## Results
-
-Local vs cloud on 30 of my own tasks, and local speech-to-text vs my own recordings.
-Run `eval/` to reproduce; numbers below are filled in by `eval/run_eval.py` and `eval/stt_eval.py`.
-
-| Measure | Local (gemma4:e4b) | Cloud | Notes |
-| --- | --- | --- | --- |
-| Task success | _pending_ | _pending_ | 30 tasks, automatic checks |
-| Median seconds per task | _pending_ | _pending_ | 16 GB laptop, CPU only |
-| Cost for the full run | $0 | _pending_ | |
-| Voice word error rate (English) | _pending_ | — | 15 clips |
-| Voice word error rate (Hinglish) | _pending_ | — | 15 clips |
-
-## Reproduce it
-
-Requirements: Windows 10 22H2+ or 11, 16 GB RAM, ~40 GB free disk.
-
-1. **Windows side:** double-click `setup\Run-Windows-Setup.cmd`
-   — checks the machine, installs Ollama, pulls the model, creates `C:\AgentWork`, installs WSL2.
-2. **WSL side** (Ubuntu shell, after the restart): `bash setup/wsl-setup.sh`
-   — installs Hermes from the official script, points it at local Ollama, installs the skills and persona.
-3. **Dictation:** install Handy from its official GitHub releases and pick a local Whisper model.
-4. **Lock it down:** walk through [config/SECURITY-PRESET.md](config/SECURITY-PRESET.md).
-
-## Awaaz Desktop (Wispr Flow-style app)
-
-A small Windows app on top of the agent: a floating pill at the bottom of the screen and a hub window.
-
-- **Hold Right Ctrl** anywhere: speak, release, and the text is typed where your cursor is (local Whisper, filler words removed, your custom spellings applied).
-- **Hold Right Alt**: ask your agent by voice; the answer streams into the hub and is read aloud with the offline Windows voice.
-- **Hub:** stats (words, speaking speed, minutes saved), agent chat, searchable history, a custom dictionary, and settings (hotkeys, speech model, language, AI polish).
-- **Instant commands, no model:** "open YouTube", "notepad kholo", "daily brief" run in under a second, fully offline.
-- **Local-first, cloud optional:** with no key, the agent runs on Gemma via Ollama. Add any OpenAI-compatible key in Settings (Gemini free tier, Groq, OpenRouter, OpenAI, Claude) and bigger tasks go to that model, which can drive a real browser window: open pages, read them, click and type. Speech, history and quick commands never leave the PC.
-- **Agent features (with a cloud key):** remembers facts about you across chats, looks at your screen when asked, writes files in AgentWork, reads and fills your clipboard, schedules tasks ("every weekday 9 AM, top AI news"), and announces timed reminders out loud. New chat stops a long task.
-- **More:** runs PowerShell commands, reads and sends Gmail, reads and creates Calendar events, generates images, and you can chat with it from your phone over Telegram (text or voice notes).
-- **Browser guardrails:** it uses its own Chrome profile, never types passwords, labels page text as untrusted, and asks before anything that sends, posts, buys or submits.
-- Start it by double-clicking `desktop\Run-Awaaz.cmd`.
+- **Desktop app:** Python + pywebview, a floating pill and a hub window (chat, history, dictionary, settings).
+- **Browser:** Playwright drives your installed Chrome (or Edge) with a separate Awaaz profile, so your
+  normal browser, its logins and its passwords are never touched.
+- **Phone:** Telegram long polling, so no server and no open port. The bot only answers your user ID.
+- **Google:** the official installed-app OAuth flow (PKCE). The token stays on your PC.
 
 ## Connect Gmail, Calendar, images and your phone (optional)
 
-**Terminal commands, emails and calendar events always need your OK:** a Yes/No box on the PC, or "reply YES" on Telegram. This is enforced in code, not left to the model.
-
 **Gmail + Google Calendar** (one-time, about 10 minutes, free):
-1. Open console.cloud.google.com, create a project (e.g. "Awaaz").
-2. APIs & Services > Library: enable **Gmail API** and **Google Calendar API**.
-3. APIs & Services > OAuth consent screen: User type **External**, fill the app name and your email, add yourself under **Test users**. Press **Publish app** so sign-in doesn't expire every 7 days (Google will warn the app is unverified; that's expected for a personal app).
-4. Credentials > Create credentials > **OAuth client ID** > Application type **Desktop app**. Copy the client ID and secret.
-5. In Awaaz: Settings > Gmail and Google Calendar, paste both, press **Save**, then **Connect Google** and approve in the browser.
+1. Open console.cloud.google.com and create a project (e.g. "Awaaz").
+2. APIs & Services → Library: enable **Gmail API** and **Google Calendar API**.
+3. APIs & Services → OAuth consent screen: User type **External**, fill in the app name and your email, add
+   yourself under **Test users**, then press **Publish app** so sign-in doesn't expire every 7 days. Google
+   will warn that the app is unverified; that's expected for a personal app.
+4. Credentials → Create credentials → **OAuth client ID** → Application type **Desktop app**. Copy the client
+   ID and secret.
+5. In Awaaz: Settings → Gmail and Google Calendar, paste both and press **Connect Google**.
 
-Scopes used: read Gmail, send Gmail, manage calendar events. The token stays in your AppData folder.
+Scopes used: read Gmail, send Gmail, manage calendar events.
 
-**Images:** set Settings > Image model to an image model your cloud provider offers (for example `gpt-image-1` on OpenAI). Images are saved in `AgentWork\images` and opened.
+**Images:** set Settings → Image model to a model your provider offers (for example `gpt-image-1` on OpenAI).
 
 **Phone (Telegram):**
-1. In Telegram, message **@BotFather**, send `/newbot`, pick a name, copy the token.
-2. Paste it in Awaaz Settings > Phone and press **Save**.
+1. In Telegram, message **@BotFather**, send `/newbot`, pick a name and copy the token.
+2. Paste it in Awaaz Settings → Phone and press **Save**.
 3. Message your new bot. It replies with your Telegram ID; paste that in **Your Telegram ID** and Save.
-4. Now text or send voice notes (Hinglish works) from anywhere. The PC must be on with Awaaz open. The bot ignores everyone else.
+4. Text or send voice notes from anywhere. Your PC must be on with Awaaz open.
 
-WhatsApp isn't supported: the official API needs a Meta business account and a public server, and unofficial WhatsApp bots get numbers banned.
+WhatsApp isn't supported: the official API needs a Meta business account and a public server, and unofficial
+WhatsApp bots get numbers banned.
+
+## Honest limits
+
+- Windows only for now.
+- The local model is slow on a CPU; agent tasks feel snappy only with a cloud key.
+- Telegram and scheduled tasks need the PC on with Awaaz running.
+- Sites with CAPTCHAs or logins may need you to step in. Awaaz will never type a password for you.
+- Hindi/Hinglish recognition is good but not perfect; add names and brands in **Dictionary**.
+
+## Run the tests
+
+```
+cd desktop
+.venv\Scripts\python.exe -m unittest
+```
 
 ## Repo map
 
 | Path | What it is |
 | --- | --- |
-| `setup/` | Windows and WSL setup scripts |
-| `desktop/` | Awaaz Desktop: floating pill, hub UI, hotkeys, local Whisper, agent chat |
-| `config/` | Agent persona and the security preset |
-| `skills/daily-brief/` | Custom skill: morning summary of reminders and changed files |
-| `eval/` | Task-level and speech-to-text evaluation harness |
-| `site/`, `render.yaml` | Case-study page on Render's free static hosting |
-| `docs/` | Case-study draft and demo video script |
+| `desktop/` | The app: hotkeys, Whisper, agent loop, browser, integrations, Telegram, hub UI, tests |
+| `skills/daily-brief/` | Morning summary of reminders and changed files |
+| `setup/` | Optional: Windows setup for Ollama, and the WSL setup for the Hermes agent engine |
+| `config/` | Agent persona and the security checklist for the Hermes setup |
+| `eval/` | Task and speech-to-text evaluation harness |
+| `site/` | One-page project site |
 
 ## License
 
-MIT for the code in this repo. Third-party projects keep their own licences — see [NOTICE.md](NOTICE.md).
+MIT. Built on open-source projects that keep their own licences; see [NOTICE.md](NOTICE.md).

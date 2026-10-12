@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Awaaz — a private voice agent for $0</title>
-<meta name="description" content="A private, offline voice agent on a 16 GB laptop, measured against paid cloud agents.">
+<title>Awaaz — free, private voice agent</title>
+<meta name="description" content="A free, open-source voice agent for Windows: dictation, browser tasks, Gmail, Calendar and a Telegram bot, with your voice kept on your PC.">
 <style>
   :root { --bg:#fbfaf7; --fg:#1d1c1a; --muted:#6b675f; --line:#e4e0d8; --accent:#c2410c; --card:#ffffff; }
   @media (prefers-color-scheme: dark) {
@@ -31,47 +31,45 @@
 </head>
 <body>
 <main>
-  <div class="eyebrow">Case study · Jitendra Singh, AI Product Manager</div>
-  <h1>I replaced $100+ a month of AI agents with a private one that runs on my laptop for $0.</h1>
-  <p class="lead">A voice agent on a 16 GB Windows laptop: offline, sandboxed, and measured against paid cloud models on 30 of my real tasks.</p>
-  <a class="cta" href="https://github.com/YOUR-USERNAME/awaaz">See the repo</a>
+  <div class="eyebrow">Open source · MIT · Windows</div>
+  <h1>Awaaz: a voice agent that runs on your laptop, costs nothing, and asks before it acts.</h1>
+  <p class="lead">Hold a key and speak in English, Hindi or Hinglish. Awaaz types for you in any app, or does the task: researches in Chrome, sets reminders, reads your screen, drafts emails, runs scheduled jobs and answers out loud. Message it from your phone on Telegram.</p>
+  <a class="cta" href="https://github.com/YOUR-USERNAME/awaaz">Get it on GitHub</a>
 
-  <h2>Demo</h2>
-  <!-- Replace with: <video controls src="demo.mp4" ...> or a YouTube embed -->
-  <div class="video">Demo video coming soon: Wi-Fi off, voice command, real task done.</div>
+  <h2>Why I built it</h2>
+  <p>The best AI assistants live in someone else's cloud, need a subscription, and get access to everything. I wanted the same habits (talk, delegate, get a morning brief) on my own 16 GB laptop with no GPU, for free, with the risky actions under my control.</p>
 
-  <h2>The problem</h2>
-  <p>Always-on agents like ChatGPT dots and Grok Bot cost $100+ a month and live in someone else's cloud. Good dictation is another subscription. I wanted the same habits — talk, delegate, get a morning brief — without the bill or the data leaving my machine.</p>
-
-  <h2>What I chose, and why</h2>
+  <h2>Product decisions</h2>
   <div class="wrap"><table>
-    <tr><th>Option</th><th>Decision</th></tr>
-    <tr><td>Paid cloud agents</td><td>Strongest, but $100+/month and cloud-only</td></tr>
-    <tr><td>Build an agent from scratch</td><td>Months of work open source already did</td></tr>
-    <tr><td>Five existing one-click installers</td><td>A sixth adds nothing; none hardened by default</td></tr>
-    <tr><td><strong>Hermes Agent + Ollama + Whisper</strong></td><td><strong>Chosen.</strong> My work went into security, custom skills and evaluation</td></tr>
+    <tr><th>Decision</th><th>Why</th></tr>
+    <tr><td>Speech recognition always local</td><td>Your voice is the most personal data; it never leaves the PC</td></tr>
+    <tr><td>Instant commands skip the model</td><td>"YouTube kholo" in 0.4 s; most daily commands don't need AI</td></tr>
+    <tr><td>Local model by default, any cloud key optional</td><td>$0 by default; a free Groq or Gemini key makes agent tasks fast</td></tr>
+    <tr><td>Approvals enforced in code</td><td>Commands, emails and invites need a Yes every time, even if a web page tricks the model</td></tr>
+    <tr><td>Agent uses its own Chrome profile</td><td>Your normal browser, passwords and cookies stay untouched</td></tr>
+    <tr><td>Telegram, not WhatsApp</td><td>No server, no open port, and no risk of a banned number</td></tr>
   </table></div>
 
-  <h2>Architecture</h2>
-<pre>You (voice / hotkey / keyboard)
- ├─ Handy ─ local Whisper ─ types into any app
- └─ Hermes Agent (WSL2) ─ Whisper in / NeuTTS out
-      ├─ Ollama, localhost only ─ gemma4:e4b
-      └─ Docker sandbox ─ sees one folder
-Optional, off by default: Telegram, Claude/Gemini API</pre>
-
-  <h2>Results</h2>
+  <h2>How fast it is</h2>
   <div class="wrap"><table>
-    <tr><th>Measure</th><th>Local</th><th>Cloud</th></tr>
-    <tr><td>Task success (30 tasks)</td><td>pending</td><td>pending</td></tr>
-    <tr><td>Median seconds per task</td><td>pending</td><td>pending</td></tr>
-    <tr><td>Cost of the full run</td><td>$0</td><td>pending</td></tr>
-    <tr><td>Voice word error rate, English / Hinglish</td><td>pending</td><td>Wispr Flow: pending</td></tr>
+    <tr><th>Task (16 GB laptop, CPU only)</th><th>Time</th></tr>
+    <tr><td>Instant command</td><td>0.4 s</td></tr>
+    <tr><td>Simple question, local model</td><td>13–20 s</td></tr>
+    <tr><td>Web research across 3–4 pages, cloud model</td><td>23–34 s, with live progress</td></tr>
   </table></div>
-  <p>Where local wins and where it loses goes here, honestly.</p>
+
+  <h2>How it works</h2>
+<pre>Hold key → Whisper on your PC → text
+  ├─ dictation: typed where your cursor is
+  └─ agent: instant command, or
+       ├─ your cloud key (Groq, Gemini, OpenAI, Claude…)
+       │    tools: Chrome, screen, files, memory, schedules,
+       │           PowerShell*, Gmail*, Calendar*
+       └─ no key: Ollama on localhost
+* asks you first, every time</pre>
 
   <h2>Credits</h2>
-  <p>Built from open-source projects: Hermes Agent (Nous Research), Ollama, Gemma, Whisper, NeuTTS and Handy. I designed and secured the setup, wrote the skills and the evaluation.</p>
+  <p>Built in Python on open-source projects: faster-whisper, Ollama, Gemma, Playwright and pywebview. Full list in the repo's NOTICE file.</p>
 
   <footer>Jitendra Singh · <a href="https://www.linkedin.com/in/YOUR-PROFILE">LinkedIn</a> · <a href="https://github.com/YOUR-USERNAME/awaaz">GitHub</a></footer>
 </main>

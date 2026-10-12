@@ -37,6 +37,8 @@ DEFAULTS = {
 }
 
 LOG = Path(__file__).parent / "logs" / "awaaz.log"
+# Telegram bot tokens, Google/OpenAI/Groq-style keys and bearer tokens never reach the log file.
+SECRET_RE = re.compile(r"\d{6,}:[\w-]{30,}|\b(?:AIza|AQ\.|sk-|gsk_|ya29\.)[\w.-]{16,}|Bearer\s+[\w.-]+")
 
 
 def log(msg):
@@ -46,7 +48,7 @@ def log(msg):
         if LOG.exists() and LOG.stat().st_size > 1_000_000:
             LOG.write_text(LOG.read_text(encoding="utf-8", errors="replace")[-200_000:], encoding="utf-8")
         with LOG.open("a", encoding="utf-8") as f:
-            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + str(msg) + "\n")
+            f.write(time.strftime("%Y-%m-%d %H:%M:%S ") + SECRET_RE.sub("[redacted]", str(msg)) + "\n")
     except OSError:
         pass
 

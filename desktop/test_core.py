@@ -32,6 +32,17 @@ class FakeHermes(BaseHTTPRequestHandler):
 
 
 class Core(unittest.TestCase):
+    def test_log_redacts_secrets(self):
+        import tempfile
+        from unittest import mock
+        log = Path(tempfile.mkdtemp()) / "a.log"
+        with mock.patch.object(core, "LOG", log):
+            core.log("url https://api.telegram.org/bot123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsawx/getUpdates "
+                     "key AIzaSyD-1234567890abcdefghijklm sk-proj-abcdefghijklmnop1234 Bearer ya29.abc.def ok")
+        text = log.read_text()
+        self.assertNotIn("AAHdq", text); self.assertNotIn("AIzaSy", text); self.assertNotIn("sk-proj", text)
+        self.assertNotIn("ya29", text); self.assertIn("ok", text)
+
     def test_clean_text(self):
         d = {"hermes": "Hermes"}
         self.assertEqual(core.clean_text("um so uh open hermes , please", d), "So open Hermes, please")
