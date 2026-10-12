@@ -1,6 +1,7 @@
 """Awaaz Desktop: hold a key to dictate anywhere, hold another to ask your local Hermes agent. Windows."""
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -33,7 +34,22 @@ from faster_whisper import WhisperModel
 import core
 import tools
 
-UI =Path(__file__).parent / "ui"
+UI = Path(__file__).parent / "ui"
+BRIEF_RE = re.compile(r"\b(daily\s+)?brief\b|\baaj\s+ka\s+(plan|kaam)\b", re.I)
+
+
+def brief_summary(text):
+    """Turn the brief's Markdown into two or three plain sentences for chat and speech."""
+    counts = dict(re.findall(r"\*\*(Overdue|Today|Next 7 days)\*\* \((\d+)\)", text))
+    items = re.findall(r"^- (\d{4}-\d{2}-\d{2}\s+.+)$", text, re.M)
+    files = re.search(r"\*\*Files changed in the last \d+ h\*\* \((\d+)\)", text)
+    parts = [f"{counts.get('Overdue', '0')} overdue, {counts.get('Today', '0')} due today and "
+             f"{counts.get('Next 7 days', '0')} in the next 7 days."]
+    if items:
+        parts.append("First up: " + "; ".join(i.split(None, 1)[1] for i in items[:3]) + ".")
+    if files:
+        parts.append(f"{files.group(1)} file(s) changed in AgentWork today.")
+    return " ".join(parts)
 SR = 16000
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
@@ -101,6 +117,13 @@ class Engine:
         except (OSError, ValueError):
             return False
 
+    def ollama_up(self):
+        try:
+            with urllib.request.urlopen(core.ollama_root(self.settings["ollama_url"]) + "/api/tags", timeout=2):
+                return True
+        except OSError:
+            return False
+
     def agent_label(self, ok):
         s = self.settings
         if s["agent_engine"] == "builtin":
@@ -118,6 +141,14 @@ class Engine:
                         self.settings = core.save_settings({**s, "agent_key": key})
                 self.start_gateway()
             ok = self.agent_health()
+            if not ok and s["agent_engine"] == "builtin" and self.ollama_up():
+                self.emit("status", {"agent": f"Agent: downloading {s['ollama_model']}…", "agentOk": False})
+                try:
+                    core.ollama_pull(s["ollama_url"], s["ollama_model"])
+                    core.log(f"pulled {s['ollama_model']}")
+                except OSError as e:
+                    core.log(f"pull {s['ollama_model']} failed: {e}")
+                ok = self.agent_health()
             if ok and s["agent_engine"] == "builtin" and warmed != s["ollama_model"]:
                 warmed = s["ollama_model"]
                 self.emit("status", {"agent": f"Agent: loading {warmed}…", "agentOk": False})
@@ -241,11 +272,16 @@ class Engine:
     def builtin_reply(self, messages):
         """Direct Ollama chat with Awaaz's own tools. Returns the final reply text."""
         s = self.settings
-        system = ("You are Awaaz, a fast private assistant running on the owner's laptop. "
-                  f"Today is {time.strftime('%A %Y-%m-%d')}, time {time.strftime('%H:%M')}. "
-                  "Reply in 1-4 short sentences, in the language the owner used (English, Hindi or Hinglish). "
-                  "Use the tools for reminders, the daily brief and files in the AgentWork folder; never invent their contents. "
-                  "After a tool runs, confirm what you did in one sentence.")
+        last = messages[-1]["content"] if messages else ""
+        if BRIEF_RE.search(last):          # fast path: no model call needed to read a file
+            reply = brief_summary(tools.run("daily_brief", {}))
+            self.emit("chat_delta", reply)
+            return reply
+        # Date only (no clock time) so the prompt prefix stays identical and Ollama reuses its cache.
+        system = ("You are Awaaz, a fast private assistant on the owner's laptop. "
+                  f"Today is {time.strftime('%A %Y-%m-%d')}. "
+                  "Reply in 1-3 short sentences in the owner's language (English, Hindi or Hinglish). "
+                  "Use tools for reminders and AgentWork files; never invent file contents.")
         msgs = [{"role": "system", "content": system}] + messages
         reply = ""
         for _ in range(4):                 # at most 3 tool rounds, then a final answer

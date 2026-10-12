@@ -91,6 +91,17 @@ class EngineTest(unittest.TestCase):
         self.assertEqual(self.e.history.list()[0]["reply"], "Done, reminder added.")
         self.assertTrue(self.events("chat_done"))
 
+    def test_brief_fast_path_skips_the_model(self):
+        def must_not_call(*a, **k):
+            raise AssertionError("model should not be called for the brief")
+        with tempfile.TemporaryDirectory() as ws, mock.patch.object(app.tools, "WORKSPACE", Path(ws)), \
+                mock.patch.object(core, "ollama_chat_stream", must_not_call):
+            (Path(ws) / "reminders.md").write_text("- 2000-01-01 pay rent\n", encoding="utf-8")
+            self.e.chat([{"role": "user", "content": "Run my daily brief"}])
+        reply = self.e.history.list()[0]["reply"]
+        self.assertTrue(reply.startswith("1 overdue, 0 due today"), reply)
+        self.assertIn("pay rent", reply)
+
     def test_builtin_offline_message(self):
         def offline(*a, **k):
             raise urllib.error.URLError("refused")

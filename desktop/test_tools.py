@@ -78,6 +78,7 @@ class Tools(unittest.TestCase):
             self.assertTrue(core.ollama_has_model(url, "gemma4:e4b"))
             self.assertFalse(core.ollama_has_model(url, "gemma4:e2b"))
             core.ollama_warm(url, "gemma4:e4b")
+            self.assertEqual(FakeOllama.last["options"], sent["options"])   # same ctx: no reload between warm-up and chat
         finally:
             srv.shutdown()
             srv.server_close()

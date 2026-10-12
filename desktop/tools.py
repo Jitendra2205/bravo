@@ -12,22 +12,22 @@ _BRIEF = Path(__file__).resolve().parents[1] / "skills" / "daily-brief" / "brief
 SPECS = [
     {"type": "function", "function": {
         "name": "daily_brief",
-        "description": "Get the owner's reminders (overdue, today, next 7 days) and files changed in the last 24 hours.",
+        "description": "Reminders due and files changed today.",
         "parameters": {"type": "object", "properties": {}}}},
     {"type": "function", "function": {
         "name": "add_reminder",
-        "description": "Add a reminder. Use when the owner asks to be reminded of something.",
+        "description": "Add a reminder.",
         "parameters": {"type": "object", "required": ["date", "text"], "properties": {
             "date": {"type": "string", "description": "Due date as YYYY-MM-DD"},
             "time": {"type": "string", "description": "Optional time as HH:MM, 24-hour"},
             "text": {"type": "string", "description": "What to do"}}}}},
     {"type": "function", "function": {
         "name": "list_files",
-        "description": "List files in the owner's AgentWork folder, newest first.",
+        "description": "List AgentWork files, newest first.",
         "parameters": {"type": "object", "properties": {}}}},
     {"type": "function", "function": {
         "name": "read_file",
-        "description": "Read a text file from the AgentWork folder.",
+        "description": "Read a text file in AgentWork.",
         "parameters": {"type": "object", "required": ["name"], "properties": {
             "name": {"type": "string", "description": "File name or relative path inside AgentWork"}}}}},
 ]

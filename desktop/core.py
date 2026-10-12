@@ -185,6 +185,10 @@ def ollama_root(url):
     return re.sub(r"/v1/?$", "", url.rstrip("/"))
 
 
+# Same options for warm-up and chat: a different num_ctx makes Ollama reload the whole model.
+OLLAMA_OPTIONS = {"num_ctx": 4096, "temperature": 0.3}
+
+
 def ollama_chat_stream(url, model, messages, tools=None, timeout=600):
     """Stream Ollama's native chat. Yields ('delta', text) and ('tool_calls', [...]).
 
@@ -192,7 +196,7 @@ def ollama_chat_stream(url, model, messages, tools=None, timeout=600):
     questions; a 4k context keeps prompt processing quick on a CPU.
     """
     payload = {"model": model, "messages": messages, "stream": True, "think": False,
-               "keep_alive": "30m", "options": {"num_ctx": 4096, "temperature": 0.3}}
+               "keep_alive": "30m", "options": OLLAMA_OPTIONS}
     if tools:
         payload["tools"] = tools
     with _post(ollama_root(url) + "/api/chat", payload, timeout=timeout) as r:
@@ -220,7 +224,14 @@ def ollama_has_model(url, model, timeout=3):
 
 def ollama_warm(url, model, timeout=600):
     """Load the model into memory now so the first question is fast."""
-    with _post(ollama_root(url) + "/api/generate", {"model": model, "keep_alive": "30m"}, timeout=timeout) as r:
+    with _post(ollama_root(url) + "/api/generate",
+               {"model": model, "keep_alive": "30m", "options": OLLAMA_OPTIONS}, timeout=timeout) as r:
+        r.read()
+
+
+def ollama_pull(url, model, timeout=3600):
+    """Download a model through Ollama (used when Settings names one that isn't installed)."""
+    with _post(ollama_root(url) + "/api/pull", {"model": model, "stream": False}, timeout=timeout) as r:
         r.read()
 
 
