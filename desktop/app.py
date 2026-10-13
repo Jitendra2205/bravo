@@ -697,15 +697,15 @@ class Engine:
             try:
                 import asyncio
                 import edge_tts
-                mp3 = core.APP_DIR / "speech.mp3"
+                mp3 = core.APP_DIR / f"speech{tid % 2}.mp3"   # alternate names so a playing file is never overwritten
                 asyncio.run(edge_tts.Communicate(text, "hi-IN-SwaraNeural").save(str(mp3)))
                 if tid == self._tts_id:
+                    # path goes inside the script: arguments after -Command are not passed as $args
                     play = ("Add-Type -AssemblyName presentationCore; $p = New-Object System.Windows.Media.MediaPlayer; "
-                            "$p.Open([uri]$args[0]); $p.Play(); Start-Sleep -Milliseconds 800; "
-                            "while (-not $p.NaturalDuration.HasTimeSpan) { Start-Sleep -Milliseconds 100 }; "
-                            "Start-Sleep -Milliseconds ([int]$p.NaturalDuration.TimeSpan.TotalMilliseconds + 300)")
-                    self.tts = subprocess.Popen(["powershell", "-NoProfile", "-Command", play, str(mp3)],
-                                                creationflags=NO_WINDOW)
+                            f"$p.Open([uri]'{mp3}'); $p.Play(); $n = 0; "
+                            "while (-not $p.NaturalDuration.HasTimeSpan -and $n -lt 100) { Start-Sleep -Milliseconds 100; $n++ }; "
+                            "if ($p.NaturalDuration.HasTimeSpan) { Start-Sleep -Milliseconds ([int]$p.NaturalDuration.TimeSpan.TotalMilliseconds + 300) }")
+                    self.tts = subprocess.Popen(["powershell", "-NoProfile", "-Command", play], creationflags=NO_WINDOW)
                 return
             except Exception as e:   # offline, or edge-tts missing
                 core.log(f"hindi voice fallback: {e}")
