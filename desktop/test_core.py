@@ -72,7 +72,10 @@ class Core(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "s.json"
             s = core.save_settings({**core.DEFAULTS, "whisper_model": "base", "speak_replies": "yes", "junk": 1}, p)
-            self.assertEqual(s["whisper_model"], "base")
+            self.assertEqual(s["whisper_model"], "fast")           # old model names upgrade to the new quality levels
+            self.assertEqual(core.speech_model({**s, "language": "en"}), "base.en")
+            self.assertEqual(core.speech_model({**s, "whisper_model": "best", "language": "hi"}), "large-v3-turbo")
+            self.assertEqual(core.speech_model({**s, "whisper_model": "balanced", "language": "auto"}), "small")
             self.assertTrue(s["speak_replies"])           # wrong type ignored, default kept
             self.assertNotIn("junk", s)
             p.write_text("{not json", encoding="utf-8")

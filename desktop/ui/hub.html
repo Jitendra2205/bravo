@@ -1,119 +1,196 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bravo</title>
 <link rel="icon" href="bravo-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400..800&family=Montserrat:wght@500..700&family=Onest:wght@500..700&display=swap" rel="stylesheet">
 <style>
+  /* ChaiUI-style tokens: near-black, white type, one cream highlight, warm hairlines, orange only in the logo. */
   :root {
-    --bg: #faf8f5; --side: #f2eee8; --card: #ffffff; --ink: #1c1a17; --muted: #5f5a52; --line: #e6e0d6;
-    --accent: #c2410c; --accent-ink: #ffffff; --accent-soft: #fdeee6; --agent: #6d28d9; --agent-soft: #f1ebfd;
-    --ok: #15803d; --err: #b91c1c; --focus: #1c1a17; --radius: 10px;
+    --bg: #fafaf9; --fg: #171717; --muted: #737373; --faint: #a3a3a3;
+    --card: rgb(255 255 255 / .7); --edge: rgb(120 53 15 / .15); --edge-hover: rgb(120 53 15 / .3);
+    --hl: #854d0e; --solid: #171717; --solid-fg: #fafafa; --soft: #f5f5f4; --side: #f5f5f4;
+    --ok: #16a34a; --bad: #dc2626; --glow: rgb(245 158 11 / .14); --focus: #a16207;
+    --radius: 12px;
+    --sans: 'Manrope', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+    --display: 'Montserrat', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+    --brand: 'Onest', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
   }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #141311; --side: #1b1916; --card: #201e1a; --ink: #eeeae4; --muted: #a8a196; --line: #2f2c27;
-            --accent: #fb923c; --accent-ink: #1c1a17; --accent-soft: #3a2416; --agent: #a78bfa; --agent-soft: #2a2140;
-            --ok: #4ade80; --err: #f87171; --focus: #eeeae4; }
+  :root.dark {
+    --bg: #0a0a0a; --fg: #fafafa; --muted: #a3a3a3; --faint: #737373;
+    --card: rgb(0 0 0 / .1); --edge: rgb(255 247 237 / .15); --edge-hover: rgb(255 247 237 / .3);
+    --hl: #ffedd5; --solid: #fafafa; --solid-fg: #0a0a0a; --soft: #171717; --side: #0f0f0f;
+    --ok: #4ade80; --bad: #f87171; --glow: rgb(251 146 60 / .10); --focus: #fdba74;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
-               font: 15px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif; }
+  [hidden] { display: none !important; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); -webkit-font-smoothing: antialiased; overflow: hidden; }
   button, input, select, textarea { font: inherit; color: inherit; }
   :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
-  .app { display: grid; grid-template-columns: 216px 1fr; height: 100%; }
-  aside { background: var(--side); border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 20px 12px; gap: 4px; }
-  .brand { display: flex; align-items: center; gap: 10px; padding: 0 10px 18px; font-weight: 650; font-size: 17px; }
-  .brand svg { color: var(--accent); }
-  nav button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 12px; border: 0; border-radius: 8px;
-               background: transparent; color: var(--muted); cursor: pointer; text-align: left; transition: background 150ms, color 150ms; }
-  nav button:hover { background: var(--card); color: var(--ink); }
-  nav button[aria-current="page"] { background: var(--card); color: var(--ink); font-weight: 600; box-shadow: 0 1px 0 var(--line); }
-  .status { margin-top: auto; padding: 12px; font-size: 12.5px; color: var(--muted); display: grid; gap: 6px; }
-  .status span { display: flex; align-items: center; gap: 8px; }
-  .led { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; }
-  .led.on { background: var(--ok); } .led.off { background: var(--err); }
-  main { overflow-y: auto; padding: 36px 44px; }
-  [hidden] { display: none !important; }
-  h1 { font-size: 26px; line-height: 1.2; margin: 0 0 6px; font-weight: 650; }
-  h2 { font-size: 15px; margin: 32px 0 12px; font-weight: 600; }
-  .sub { color: var(--muted); margin: 0 0 24px; }
-  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
-  .keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-  .keycard { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: flex; gap: 14px; align-items: center; }
-  .keycard .ico { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); }
-  .keycard.agent .ico { background: var(--agent-soft); color: var(--agent); }
-  .keycard b { display: block; font-weight: 600; }
-  .keycard small { color: var(--muted); font-size: 13px; }
-  kbd { font: 600 12px/1 ui-monospace, "Cascadia Mono", Consolas, monospace; padding: 3px 7px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--bg); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-  .stat { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
-  .stat .n { font-size: 28px; font-weight: 650; line-height: 1.1; font-variant-numeric: tabular-nums; }
-  .stat .l { color: var(--muted); font-size: 13px; margin-top: 4px; }
-  .list { display: grid; gap: 8px; }
-  .item { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
-  .item .meta { display: flex; gap: 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
-  .badge { font-size: 11.5px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
-  .badge.agent { background: var(--agent-soft); color: var(--agent); }
-  .item .text { grid-column: 1 / -1; white-space: pre-wrap; word-break: break-word; }
-  .item .reply { grid-column: 1 / -1; color: var(--muted); font-size: 14px; border-left: 2px solid var(--line); padding-left: 10px; white-space: pre-wrap; }
-  .acts { display: flex; gap: 2px; }
-  .icon-btn { border: 0; background: transparent; color: var(--muted); width: 32px; height: 32px; border-radius: 7px; display: grid; place-items: center; cursor: pointer; transition: background 150ms, color 150ms; }
-  .icon-btn:hover { background: var(--bg); color: var(--ink); }
-  .empty { color: var(--muted); padding: 24px; text-align: center; border: 1px dashed var(--line); border-radius: var(--radius); }
-  .btn { white-space: nowrap; border: 1px solid var(--line); background: var(--card); padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: background 150ms; min-height: 38px; }
-  .btn:hover { background: var(--bg); }
-  .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
-  .btn.primary:hover { filter: brightness(1.06); }
-  .btn:disabled { opacity: 0.5; cursor: default; }
-  .search { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 0 12px; flex: 1; }
-  .search input { border: 0; background: transparent; outline: none; padding: 9px 0; flex: 1; }
-  .row { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; }
-  /* chat */
-  #agent { display: flex; flex-direction: column; height: 100%; }
-  #agent:not([hidden]) { display: flex; }
-  .thread { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 4px 2px 16px; min-height: 200px; }
-  .msg { max-width: 78%; padding: 10px 14px; border-radius: 14px; white-space: pre-wrap; word-break: break-word; }
-  .msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
-  .msg.bot { align-self: flex-start; background: var(--card); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
-  .msg.err { border-color: var(--err); color: var(--err); }
-  .typing::after { content: "▍"; animation: blink 1s steps(1) infinite; }
-  .typing[data-progress]::before { content: attr(data-progress) "…"; display: block; color: var(--muted); font-size: 13px; }
+  svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .hl { font-family: var(--display); font-weight: 500; letter-spacing: -.01em; color: var(--hl); }
+  .muted { color: var(--muted); }
+
+  /* layout */
+  .app { display: grid; grid-template-columns: 232px 1fr; height: 100%; position: relative; isolation: isolate; }
+  .glow { position: absolute; inset: 0 0 auto 232px; height: 420px; z-index: -1; pointer-events: none;
+    background: radial-gradient(50% 70% at 50% 0%, var(--glow), transparent 70%); }
+  .glow::after { content: ""; position: absolute; inset: 0; opacity: .5;
+    background-image: linear-gradient(var(--edge) 1px, transparent 1px), linear-gradient(90deg, var(--edge) 1px, transparent 1px);
+    background-size: 44px 44px; mask-image: radial-gradient(45% 80% at 50% 0%, #000, transparent 75%); }
+  aside { background: var(--side); border-right: 1px solid var(--edge); display: flex; flex-direction: column; padding: 18px 12px; gap: 4px; min-width: 0; }
+  .brand { display: flex; align-items: center; gap: 10px; padding: 2px 10px 20px; font: 600 20px var(--brand); letter-spacing: -.02em; }
+  .brand img { width: 34px; height: 34px; border-radius: 9px; transition: transform .3s; }
+  .brand:hover img { transform: rotate(-8deg) scale(1.06); }
+  nav { display: grid; gap: 2px; }
+  nav button { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border: 0; border-radius: 9px; background: none; color: var(--muted); cursor: pointer; text-align: left; transition: color .2s, background .2s; }
+  nav button:hover { color: var(--fg); background: var(--soft); }
+  nav button[aria-current="page"] { color: var(--fg); background: var(--soft); box-shadow: inset 0 0 0 1px var(--edge); font-weight: 600; }
+  .side-foot { margin-top: auto; display: grid; gap: 10px; }
+  .status { display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); padding: 0 10px; }
+  .status span { display: flex; gap: 8px; align-items: baseline; }
+  .led { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex: none; transform: translateY(-1px); }
+  .led.on { background: var(--ok); animation: ping 2.4s infinite; }
+  .led.off { background: var(--bad); }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 6px transparent; } }
+  .theme { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: 9px; font-size: 13px; }
+  .theme:hover { color: var(--fg); background: var(--soft); }
+  .theme i { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
+
+  main { overflow-y: auto; padding: 40px 48px 56px; scroll-behavior: smooth; }
+  section { max-width: 920px; margin: 0 auto; }
+  section:not([hidden]) { animation: enter .35s cubic-bezier(.2,.7,.2,1); }
+  @keyframes enter { from { opacity: 0; transform: translateY(10px); } }
+  h1 { font-size: 32px; font-weight: 650; letter-spacing: -.025em; line-height: 1.15; margin: 0 0 8px; }
+  h2 { font-size: 19px; font-weight: 600; letter-spacing: -.01em; margin: 36px 0 12px; }
+  .lead { color: var(--muted); font-size: 16.5px; margin: 0 0 24px; max-width: 640px; }
+
+  /* cards and buttons */
+  .card { background: var(--card); border: 1px solid var(--edge); border-radius: var(--radius); backdrop-filter: blur(6px); transition: border-color .25s, opacity .25s, transform .25s; }
+  .card.hover { opacity: .92; }
+  .card.hover:hover { opacity: 1; border-color: var(--edge-hover); transform: translateY(-2px); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 1px solid var(--edge); background: transparent; cursor: pointer; font-weight: 600; font-size: 14px;
+    border-radius: 0 10px 0 10px; transition: background .2s, border-color .2s, transform .15s; white-space: nowrap; }
+  .btn:hover { border-color: var(--edge-hover); background: var(--soft); }
+  .btn:active { transform: scale(.98); }
+  .btn.solid { background: var(--solid); color: var(--solid-fg); border-color: var(--solid); border-radius: 10px 0 10px 0; }
+  .btn.solid:hover { opacity: .9; }
+  .btn svg { width: 16px; height: 16px; }
+  .icon-btn { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--muted); cursor: pointer; }
+  .icon-btn:hover { color: var(--fg); background: var(--soft); }
+  .icon-btn svg { width: 16px; height: 16px; }
+  kbd { font: 600 12px ui-monospace, monospace; padding: 2px 7px; border: 1px solid var(--edge); border-bottom-width: 2px; border-radius: 6px; background: var(--soft); white-space: nowrap; }
+  .badge-anim { position: relative; display: inline-flex; overflow: hidden; border-radius: 999px; padding: 1px; margin-bottom: 18px; }
+  .badge-anim::before { content: ""; position: absolute; top: 50%; left: 50%; width: 320px; height: 20px; border-radius: 999px; transform: translate(-50%, -50%);
+    background: linear-gradient(90deg, transparent, transparent, #f97316); animation: spin 4s linear infinite; }
+  .badge-anim span { position: relative; z-index: 1; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 500; background: var(--soft); }
+  @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+  /* home */
+  .hero { display: grid; grid-template-columns: 1fr auto; gap: 24px; align-items: center; margin-bottom: 8px; }
+  .hero h1 { font-size: 40px; }
+  .pup { width: 108px; height: 108px; border-radius: 26px; animation: bob 4s ease-in-out infinite; filter: drop-shadow(0 18px 30px rgb(245 158 11 / .18)); }
+  @keyframes bob { 50% { transform: translateY(-6px) rotate(-2deg); } }
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .keycard { padding: 18px; display: flex; gap: 14px; align-items: flex-start; }
+  .keycard .ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; border: 1px solid var(--edge); flex: none; }
+  .keycard b { display: block; font-family: var(--display); font-weight: 600; margin-bottom: 2px; }
+  .keycard small { color: var(--muted); font-size: 13.5px; }
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .stat { padding: 16px 18px; }
+  .stat .n { font: 650 28px var(--display); letter-spacing: -.02em; }
+  .stat .l { color: var(--muted); font-size: 13px; }
+
+  /* recipes */
+  .recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+  .recipe { padding: 16px; text-align: left; cursor: pointer; display: grid; gap: 6px; color: inherit; font: inherit; }
+  .recipe .top { display: flex; align-items: center; gap: 10px; }
+  .recipe .ico { width: 32px; height: 32px; border-radius: 8px; display: grid; place-items: center; border: 1px solid var(--edge); }
+  .recipe b { font-family: var(--display); font-weight: 600; font-size: 14.5px; }
+  .recipe small { color: var(--muted); font-size: 13px; line-height: 1.45; }
+  .recipe .tag { justify-self: start; font-size: 11.5px; color: var(--muted); border: 1px solid var(--edge); border-radius: 5px; padding: 1px 7px; }
+  .stagger > * { animation: rise .45s both cubic-bezier(.2,.7,.2,1); }
+  .stagger > *:nth-child(2) { animation-delay: .04s; } .stagger > *:nth-child(3) { animation-delay: .08s; } .stagger > *:nth-child(4) { animation-delay: .12s; }
+  .stagger > *:nth-child(5) { animation-delay: .16s; } .stagger > *:nth-child(6) { animation-delay: .2s; } .stagger > *:nth-child(n+7) { animation-delay: .24s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+
+  /* lists */
+  .list { display: grid; gap: 10px; }
+  .item { padding: 14px 16px; display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; }
+  .meta { display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+  .badge { font-size: 11.5px; padding: 1px 8px; border-radius: 5px; border: 1px solid var(--edge); color: var(--muted); }
+  .badge.agent { color: var(--hl); }
+  .acts { display: flex; gap: 2px; grid-row: span 2; align-self: start; }
+  .item .text { grid-column: 1; }
+  .item .reply { grid-column: 1 / -1; color: var(--muted); font-size: 14px; border-left: 2px solid var(--edge); padding-left: 10px; margin-top: 4px; }
+  .empty { padding: 28px; text-align: center; color: var(--muted); border: 1px dashed var(--edge); border-radius: var(--radius); }
+
+  /* agent */
+  #agent { display: flex; flex-direction: column; min-height: calc(100vh - 96px); }
+  .row { display: flex; gap: 12px; align-items: center; }
+  .thread { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 12px 0; }
+  .msg { max-width: 78%; padding: 11px 15px; border-radius: 14px; white-space: pre-wrap; animation: rise .3s both; }
+  .msg.user { align-self: flex-end; background: var(--solid); color: var(--solid-fg); border-bottom-right-radius: 4px; }
+  .msg.bot { align-self: flex-start; background: var(--card); border: 1px solid var(--edge); border-bottom-left-radius: 4px; }
+  .msg.err { color: var(--bad); border-color: color-mix(in srgb, var(--bad) 40%, transparent); }
+  .typing:empty::after { content: ""; display: inline-block; width: 36px; height: 10px;
+    background: radial-gradient(circle 4px, var(--muted) 98%, transparent) 0 50% / 12px 10px repeat-x; animation: dots 1s steps(3) infinite; }
+  .typing:not(:empty)::after { content: "▍"; animation: blink 1s steps(1) infinite; color: var(--muted); }
+  .typing[data-progress]::before { content: attr(data-progress) "…"; display: block; font-size: 13px; margin-bottom: 4px;
+    background: linear-gradient(90deg, var(--muted) 35%, var(--fg) 50%, var(--muted) 65%) 0 0 / 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 1.6s linear infinite; }
+  @keyframes dots { from { width: 0; } to { width: 36px; } }
   @keyframes blink { 50% { opacity: 0; } }
-  .composer { display: flex; gap: 10px; align-items: flex-end; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 8px 8px 8px 14px; }
-  .composer textarea { flex: 1; border: 0; background: transparent; resize: none; outline: none; max-height: 140px; padding: 6px 0; }
-  .send { background: var(--accent); color: var(--accent-ink); border: 0; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; }
-  .send:disabled { opacity: 0.45; cursor: default; }
-  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-  .chip { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 12px; cursor: pointer; font-size: 13.5px; color: var(--muted); transition: color 150ms, border-color 150ms; }
-  .chip:hover { color: var(--ink); border-color: var(--muted); }
-  /* forms */
-  .form { display: grid; gap: 18px; max-width: 620px; }
-  .field { display: grid; gap: 6px; min-width: 0; }
-  .field select, .field input { min-width: 0; width: 100%; }
-  .form > *, .two > * { min-width: 0; }
-  .field label { font-weight: 600; font-size: 14px; }
-  .field .help { color: var(--muted); font-size: 13px; }
-  .field input[type=text], .field input[type=password], .field select { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 38px; }
-  .toggle { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
-  .toggle input { width: 40px; height: 22px; accent-color: var(--accent); cursor: pointer; }
-  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: start; }
-  .note { font-size: 13px; color: var(--muted); background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 8px 16px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 200ms; pointer-events: none; }
-  .toast.show { opacity: 1; }
-  .dict-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; align-items: center; }
-  .dict-row input { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
-  @media (max-width: 720px) { .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } aside { min-width: 0; padding: 8px; border-right: 0; border-bottom: 1px solid var(--line); } aside .brand, aside .status { display: none; } nav { display: flex; overflow-x: auto; } nav button { width: auto; flex: none; } main { padding: 24px 16px; } .two { grid-template-columns: 1fr; } }
-  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @keyframes shimmer { to { background-position: -100% 0; } }
+  .composer { position: sticky; bottom: 0; display: flex; gap: 10px; align-items: flex-end; padding: 10px; margin-top: 12px; background: var(--bg); }
+  .composer textarea { flex: 1; resize: none; border: 0; background: transparent; outline: none; padding: 8px; max-height: 160px; }
+  .send { width: 40px; height: 40px; border-radius: 0 10px 0 10px; border: 0; background: var(--solid); color: var(--solid-fg); display: grid; place-items: center; cursor: pointer; transition: transform .15s, opacity .2s; }
+  .send:hover { transform: translateY(-1px); } .send:disabled { opacity: .4; cursor: default; transform: none; }
+  #recipes-wrap h2 { margin-top: 8px; }
+
+  /* history + dictionary */
+  .search { flex: 1; display: flex; align-items: center; gap: 8px; padding: 0 12px; height: 40px; }
+  .search input { flex: 1; border: 0; background: transparent; outline: none; }
+  .dict-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: center; padding: 8px 12px; }
+  .dict-row input { background: transparent; border: 1px solid var(--edge); border-radius: 8px; padding: 8px 10px; min-width: 0; }
+
+  /* settings */
+  .group { padding: 20px; display: grid; gap: 16px; margin-bottom: 16px; }
+  .group > h3 { margin: 0; font: 600 16px var(--display); display: flex; gap: 10px; align-items: center; }
+  .group > p { margin: -10px 0 0; color: var(--muted); font-size: 13.5px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .two > * { min-width: 0; }
+  .field { display: grid; gap: 6px; min-width: 0; align-content: start; }
+  .field label { font-weight: 600; font-size: 13.5px; }
+  .help { color: var(--muted); font-size: 12.5px; }
+  .field input, .field select { width: 100%; min-width: 0; background: var(--bg); border: 1px solid var(--edge); border-radius: 9px; padding: 9px 11px; transition: border-color .2s; }
+  .field input:focus, .field select:focus { border-color: var(--edge-hover); }
+  .toggle { display: flex; justify-content: space-between; align-items: center; gap: 16px; cursor: pointer; }
+  .toggle b { font-weight: 600; font-size: 14px; } .toggle small { display: block; color: var(--muted); font-size: 12.5px; }
+  .toggle input { appearance: none; width: 40px; height: 22px; border-radius: 999px; background: var(--edge-hover); position: relative; cursor: pointer; flex: none; transition: background .2s; margin: 0; }
+  .toggle input::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); transition: transform .2s; }
+  .toggle input:checked { background: var(--solid); } .toggle input:checked::after { transform: translateX(18px); }
+  .save-bar { position: sticky; bottom: 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 16px; margin-top: 8px; background: var(--bg); }
+  .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--solid); color: var(--solid-fg); padding: 10px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; transition: .25s; pointer-events: none; z-index: 10; }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; grid-template-rows: auto 1fr; } .glow { left: 0; }
+    aside { padding: 8px; border-right: 0; border-bottom: 1px solid var(--edge); } aside .brand, .side-foot { display: none; }
+    nav { display: flex; overflow-x: auto; } nav button { flex: none; }
+    main { padding: 24px 16px; } .two, .keys, .hero { grid-template-columns: 1fr; } .stats { grid-template-columns: 1fr 1fr; } .pup { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
 <body>
 <div class="app">
+  <div class="glow" aria-hidden="true"></div>
   <aside>
-    <div class="brand">
-      <img src="bravo-logo.svg" alt="" width="32" height="32">
-      Bravo
-    </div>
+    <div class="brand"><img src="bravo-logo.svg" alt="">Bravo</div>
     <nav aria-label="Main">
       <button data-page="home" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</button>
       <button data-page="agent"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Agent</button>
@@ -121,61 +198,63 @@
       <button data-page="dictionary"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Dictionary</button>
       <button data-page="settings"><svg viewBox="0 0 24 24"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>Settings</button>
     </nav>
-    <div class="status" aria-live="polite">
-      <span><i id="led-mic" class="led"></i><span id="st-mic">Speech model loading</span></span>
-      <span><i id="led-agent" class="led"></i><span id="st-agent">Agent: checking</span></span>
-      <span><i class="led on"></i>Runs on this PC</span>
+    <div class="side-foot">
+      <div class="status" aria-live="polite">
+        <span><i id="led-mic" class="led"></i><span id="st-mic">Speech model loading</span></span>
+        <span><i id="led-agent" class="led"></i><span id="st-agent">Agent: checking</span></span>
+      </div>
+      <button class="theme" id="theme" type="button"><i aria-hidden="true"></i><span>Light or dark</span></button>
     </div>
   </aside>
 
   <main>
     <section id="home">
-      <h1 id="greet">Hello</h1>
-      <p class="sub">Your AI agent on this PC. Give it a task by typing, speaking or messaging from your phone.</p>
-      <div class="keys">
-        <div class="keycard agent"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-          <div><b>Give Bravo a task</b><small>Hold <kbd id="k-agent">Right Alt</kbd> and say it, or type in the Agent tab. Bravo does it and answers out loud.</small></div></div>
-        <div class="keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
-          <div><b>Bonus: dictate anywhere</b><small>Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. Text appears where your cursor is.</small></div></div>
+      <div class="hero">
+        <div>
+          <div class="badge-anim"><span>Free, private, on your PC</span></div>
+          <h1 id="greet">Hello</h1>
+          <p class="lead">What should Bravo <span class="hl">fetch for you today?</span> Type a task, hold a key and say it, or pick a recipe below.</p>
+        </div>
+        <img class="pup" src="bravo-logo.svg" alt="Bravo the puppy">
       </div>
+      <div class="keys stagger">
+        <div class="card keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+          <div><b>Give Bravo a task</b><small id="agent-hint">Hold <kbd id="k-agent">Right Alt</kbd> and say it, or type in the Agent tab.</small></div></div>
+        <div class="card keycard"><div class="ico"><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></div>
+          <div><b>Dictate anywhere</b><small id="dictate-hint">Hold <kbd id="k-dictate">Right Ctrl</kbd>, speak, release. The text appears where your cursor is.</small></div></div>
+      </div>
+      <h2>Popular recipes</h2>
+      <div class="recipes stagger" id="home-recipes"></div>
       <h2>Your numbers</h2>
-      <div class="stats">
-        <div class="stat"><div class="n" id="s-tasks">0</div><div class="l">Tasks done by Bravo</div></div>
-        <div class="stat"><div class="n" id="s-total">0</div><div class="l">Words dictated</div></div>
-        <div class="stat"><div class="n" id="s-wpm">0</div><div class="l">Speaking speed (wpm)</div></div>
-        <div class="stat"><div class="n" id="s-saved">0</div><div class="l">Minutes saved vs typing</div></div>
+      <div class="stats stagger">
+        <div class="card stat"><div class="n" id="s-tasks">0</div><div class="l">Tasks done by Bravo</div></div>
+        <div class="card stat"><div class="n" id="s-total">0</div><div class="l">Words dictated</div></div>
+        <div class="card stat"><div class="n" id="s-wpm">0</div><div class="l">Speaking speed (wpm)</div></div>
+        <div class="card stat"><div class="n" id="s-saved">0</div><div class="l">Minutes saved vs typing</div></div>
       </div>
       <h2>Recent</h2>
       <div class="list" id="recent"></div>
     </section>
 
     <section id="agent" hidden>
-      <div class="row" style="justify-content:space-between;margin-bottom:8px">
-        <div><h1>Agent</h1><p class="sub" style="margin:0">Your agent: it uses your cloud model when a key is set, otherwise the local one. Hold <kbd id="k-agent2">Right Alt</kbd> to talk, or type below.</p></div>
-        <button class="btn" id="new-chat" title="Starts over and stops a running task">New chat</button>
+      <div class="row" style="justify-content:space-between;align-items:flex-start">
+        <div><h1>Agent</h1><p class="lead" style="margin:0">Ask for anything. <span class="hl">Risky steps always wait for your Yes.</span></p></div>
+        <button class="btn" id="new-chat" title="Starts over and stops a running task"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>New chat</button>
       </div>
       <div class="thread" id="thread" aria-live="polite"></div>
-      <div class="chips" id="chips">
-        <button class="chip">Run my daily brief</button>
-        <button class="chip">Remind me to send the invoice tomorrow at 9 am</button>
-        <button class="chip">Summarise the newest file in my AgentWork folder</button>
-        <button class="chip">Open YouTube</button>
-        <button class="chip">Search YouTube for lofi music</button>
-        <button class="chip">What's on my screen?</button>
-        <button class="chip">Every weekday at 9 am, give me a summary of the top AI news</button>
-      </div>
-      <form class="composer" id="composer">
-        <label for="msg" class="sr" style="position:absolute;left:-9999px">Message</label>
-        <textarea id="msg" rows="1" placeholder="Message Bravo… (Enter to send, Shift+Enter for a new line)"></textarea>
-        <button class="send" id="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></button>
+      <div id="recipes-wrap"><h2>Recipes</h2><div class="recipes stagger" id="recipes"></div></div>
+      <form class="composer card" id="composer">
+        <label for="msg" style="position:absolute;left:-9999px">Message</label>
+        <textarea id="msg" rows="1" placeholder="Ask Bravo… (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button class="send" id="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </form>
     </section>
 
     <section id="history" hidden>
       <h1>History</h1>
-      <p class="sub">Everything you dictated or asked. Stored only on this PC.</p>
-      <div class="row">
-        <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <p class="lead">Everything you dictated or asked, <span class="hl">stored only on this PC.</span></p>
+      <div class="row" style="margin-bottom:14px">
+        <div class="search card"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           <input id="q" type="search" placeholder="Search history" aria-label="Search history"></div>
         <button class="btn" id="clear">Clear all</button>
       </div>
@@ -184,81 +263,106 @@
 
     <section id="dictionary" hidden>
       <h1>Dictionary</h1>
-      <p class="sub">Words Bravo should always spell your way: names, brands, Hindi words.</p>
-      <div class="form">
-        <div class="dict-row" style="color:var(--muted);font-size:13px;font-weight:600"><span>When I say</span><span>Write</span><span></span></div>
-        <div id="dict" class="list"></div>
+      <p class="lead">Words Bravo should always spell <span class="hl">your way:</span> names, brands, Hindi words.</p>
+      <div class="card" style="padding:8px">
+        <div class="dict-row muted" style="font-size:13px;font-weight:600"><span>When I say</span><span>Write</span><span></span></div>
+        <div id="dict"></div>
         <form class="dict-row" id="dict-add">
           <input id="d-from" placeholder="e.g. anouk" aria-label="Heard as">
           <input id="d-to" placeholder="e.g. Anouk" aria-label="Write as">
-          <button class="btn primary" type="submit">Add</button>
+          <button class="btn solid" type="submit">Add</button>
         </form>
       </div>
     </section>
 
     <section id="settings" hidden>
       <h1>Settings</h1>
-      <p class="sub">Changes apply when you press Save.</p>
-      <form class="form" id="settings-form">
-        <div class="two">
-          <div class="field"><label for="dictate_hotkey">Dictate key (hold)</label>
-            <select id="dictate_hotkey"><option>right ctrl</option><option>right alt</option><option>right shift</option><option>caps lock</option><option>f8</option><option>f9</option></select></div>
-          <div class="field"><label for="agent_hotkey">Agent key (hold)</label>
-            <select id="agent_hotkey"><option>right alt</option><option>right ctrl</option><option>right shift</option><option>caps lock</option><option>f9</option><option>f10</option></select></div>
-        </div>
-        <div class="two">
-          <div class="field"><label for="whisper_model">Speech model</label>
-            <select id="whisper_model"><option value="base">Base (fastest)</option><option value="small">Small (balanced)</option><option value="medium">Medium (best for Hindi, slower)</option></select>
-            <span class="help">Downloads once, then works offline.</span></div>
-          <div class="field"><label for="language">Language</label>
-            <select id="language"><option value="auto">Auto-detect</option><option value="en">English</option><option value="hi">Hindi</option></select></div>
-        </div>
-        <label class="toggle"><span><b>Remove filler words</b><br><small style="color:var(--muted)">Drops "um", "uh" and similar.</small></span><input type="checkbox" id="remove_fillers"></label>
-        <label class="toggle"><span><b>Polish with local AI</b><br><small style="color:var(--muted)">Cleans grammar and punctuation with Gemma. Adds a few seconds on CPU.</small></span><input type="checkbox" id="polish_with_ai"></label>
-        <label class="toggle"><span><b>Speak agent replies</b><br><small style="color:var(--muted)">Uses the offline Windows voice.</small></span><input type="checkbox" id="speak_replies"></label>
-        <div class="field"><label for="agent_engine">Agent engine</label>
-          <select id="agent_engine"><option value="builtin">Built-in (fast: reminders, daily brief, your files)</option><option value="hermes">Hermes (full agent with memory and skills, slower)</option></select>
-          <span class="help">Built-in talks straight to Ollama. Hermes runs in Ubuntu and needs setup/wsl-setup.sh.</span></div>
-        <div class="field"><label for="ollama_model">Local model</label><input type="text" id="ollama_model" spellcheck="false">
-          <span class="help">gemma4:e4b is balanced. For faster replies run "ollama pull gemma4:e2b" and enter gemma4:e2b here.</span></div>
-        <div class="field"><label for="cloud_preset">Cloud model (optional)</label>
-          <select id="cloud_preset">
-            <option value="">Choose a provider to fill in the address…</option>
-            <option value="https://api.groq.com/openai/v1|openai/gpt-oss-120b">Groq (free tier, fastest)</option>
-            <option value="https://generativelanguage.googleapis.com/v1beta/openai|gemini-flash-latest">Google Gemini (free tier)</option>
-            <option value="https://openrouter.ai/api/v1|minimax/minimax-m3:free">MiniMax M3 via OpenRouter (free, daily limits)</option>
-            <option value="https://api.minimax.io/v1|MiniMax-M3">MiniMax M3 (paid, low cost)</option>
-            <option value="https://openrouter.ai/api/v1|">OpenRouter (free and paid models)</option>
-            <option value="https://api.openai.com/v1|">OpenAI (paid)</option>
-            <option value="https://api.anthropic.com/v1|">Anthropic Claude (paid)</option>
-            <option value="http://localhost:1234/v1|">Other OpenAI-compatible server</option>
-          </select>
-          <span class="help">With a key, bigger tasks and browser work go to this model. Without one, everything stays on this PC.</span></div>
-        <div class="field"><label for="cloud_url">Cloud API address</label><input type="text" id="cloud_url" spellcheck="false"></div>
-        <div class="two">
-          <div class="field"><label for="cloud_model">Cloud model name</label><input type="text" id="cloud_model" spellcheck="false" placeholder="from your provider's model list"></div>
-          <div class="field"><label for="cloud_key">Cloud API key</label><input type="password" id="cloud_key" autocomplete="off" spellcheck="false" placeholder="leave empty to stay local"></div>
-        </div>
-        <div class="field"><label for="image_model">Image model (optional)</label><input type="text" id="image_model" spellcheck="false" placeholder="e.g. gpt-image-1 on OpenAI">
-          <span class="help">Used for "make an image of…". Uses the same cloud address and key.</span></div>
-        <div class="field"><label>Gmail and Google Calendar</label>
+      <p class="lead">Changes apply when you press <span class="hl">Save.</span></p>
+      <form id="settings-form">
+        <div class="card group">
+          <h3><svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>Voice</h3>
+          <p>Speech is turned into text on this PC. Models download once, then work offline.</p>
           <div class="two">
-            <input type="text" id="google_client_id" spellcheck="false" placeholder="OAuth client ID" aria-label="Google client ID">
-            <input type="password" id="google_client_secret" autocomplete="off" spellcheck="false" placeholder="Client secret" aria-label="Google client secret">
+            <div class="field"><label for="language">Language you speak</label>
+              <select id="language">
+                <option value="auto">Auto-detect (mixed English and Hindi)</option><option value="en">English</option><option value="hi">Hindi</option>
+                <option value="bn">Bengali</option><option value="ta">Tamil</option><option value="te">Telugu</option><option value="mr">Marathi</option>
+                <option value="gu">Gujarati</option><option value="kn">Kannada</option><option value="ml">Malayalam</option><option value="pa">Punjabi</option>
+                <option value="ur">Urdu</option><option value="es">Spanish</option><option value="fr">French</option><option value="de">German</option>
+                <option value="pt">Portuguese</option><option value="ar">Arabic</option><option value="ja">Japanese</option><option value="zh">Chinese</option>
+              </select></div>
+            <div class="field"><label for="whisper_model">Speech quality</label>
+              <select id="whisper_model"><option value="fast">Fast (smallest download)</option><option value="balanced">Balanced (recommended)</option><option value="best">Best accuracy (slower, about 1.5 GB)</option></select>
+              <span class="help" id="model-help"></span></div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;margin-top:8px"><button class="btn" type="button" id="google-connect">Connect Google</button><span class="help" id="google-status">Not connected</span></div>
-          <span class="help">Create a free "Desktop app" OAuth client in Google Cloud (steps in the README), paste it here, press Save, then Connect.</span></div>
-        <div class="field"><label>Phone (Telegram)</label>
           <div class="two">
-            <input type="password" id="telegram_token" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token">
-            <input type="text" id="telegram_user" spellcheck="false" placeholder="Your Telegram ID" aria-label="Your Telegram ID">
+            <div class="field"><label for="agent_hotkey">Talk to Bravo key (hold)</label>
+              <select id="agent_hotkey"><option>right alt</option><option>right ctrl</option><option>right shift</option><option>caps lock</option><option>f9</option><option>f10</option><option value="off">Off</option></select></div>
+            <div class="field"><label for="dictate_hotkey">Dictation key (hold)</label>
+              <select id="dictate_hotkey"><option>right ctrl</option><option>right alt</option><option>right shift</option><option>caps lock</option><option>f8</option><option>f9</option><option value="off">Off (no dictation)</option></select></div>
           </div>
-          <span class="help">Message your bot once; it replies with your ID. Paste it here and Save. The bot answers only you.</span></div>
-        <div class="field"><label for="agent_url">Hermes address</label><input type="text" id="agent_url" spellcheck="false"></div>
-        <div class="field"><label for="agent_key">Hermes key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false">
-          <span class="help">Filled in automatically from your Hermes setup. Never shared.</span></div>
-        <div class="note">Privacy: speech is transcribed on this PC and history is saved in your AppData folder. Agent questions go online only when you add a cloud key above; quick commands like "open YouTube" never leave this PC.</div>
-        <div><button class="btn primary" type="submit">Save</button></div>
+          <label class="toggle"><span><b>Show the floating bar</b><small>Off: the bar at the bottom of the screen only appears while you hold a key or Bravo is working.</small></span><input type="checkbox" id="show_pill"></label>
+          <label class="toggle"><span><b>Speak replies out loud</b><small>Uses the Windows voice; Hindi replies use a Hindi voice if Windows has one.</small></span><input type="checkbox" id="speak_replies"></label>
+          <label class="toggle"><span><b>Remove filler words</b><small>Drops "um", "uh" and similar from dictation.</small></span><input type="checkbox" id="remove_fillers"></label>
+          <label class="toggle"><span><b>Polish dictation with the offline model</b><small>Fixes grammar and punctuation. Adds a few seconds on a laptop CPU.</small></span><input type="checkbox" id="polish_with_ai"></label>
+        </div>
+
+        <div class="card group">
+          <h3><svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2zM9 21h6"/></svg>Brain</h3>
+          <p>With a cloud key, tasks are faster and smarter. Without one, everything stays on this PC.</p>
+          <div class="field"><label for="cloud_preset">Cloud model</label>
+            <select id="cloud_preset">
+              <option value="">Choose a provider to fill in the details…</option>
+              <option value="https://api.groq.com/openai/v1|openai/gpt-oss-120b">Groq (free tier, fastest)</option>
+              <option value="https://generativelanguage.googleapis.com/v1beta/openai|gemini-flash-latest">Google Gemini (free tier)</option>
+              <option value="https://openrouter.ai/api/v1|minimax/minimax-m3:free">MiniMax M3 via OpenRouter (free, daily limits)</option>
+              <option value="https://api.minimax.io/v1|MiniMax-M3">MiniMax M3 (paid, low cost)</option>
+              <option value="https://openrouter.ai/api/v1|">OpenRouter (free and paid models)</option>
+              <option value="https://api.openai.com/v1|">OpenAI (paid)</option>
+              <option value="https://api.anthropic.com/v1|">Anthropic Claude (paid)</option>
+              <option value="http://localhost:1234/v1|">Other OpenAI-compatible server</option>
+            </select></div>
+          <div class="two">
+            <div class="field"><label for="cloud_model">Model name</label><input type="text" id="cloud_model" spellcheck="false" placeholder="from your provider's model list"></div>
+            <div class="field"><label for="cloud_key">API key</label><input type="password" id="cloud_key" autocomplete="off" spellcheck="false" placeholder="leave empty to stay offline"></div>
+          </div>
+          <div class="field"><label for="cloud_url">API address</label><input type="text" id="cloud_url" spellcheck="false"></div>
+          <div class="two">
+            <div class="field"><label for="ollama_model">Offline model (Ollama)</label><input type="text" id="ollama_model" spellcheck="false">
+              <span class="help">gemma4:e4b is balanced; qwen3.5:4b is faster.</span></div>
+            <div class="field"><label for="image_model">Image model (optional)</label><input type="text" id="image_model" spellcheck="false" placeholder="e.g. gpt-image-1 on OpenAI"></div>
+          </div>
+        </div>
+
+        <div class="card group">
+          <h3><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Connections</h3>
+          <p>Optional. Each one is off until you set it up.</p>
+          <div class="field"><label>Gmail and Google Calendar</label>
+            <div class="two">
+              <input type="text" id="google_client_id" spellcheck="false" placeholder="OAuth client ID" aria-label="Google client ID">
+              <input type="password" id="google_client_secret" autocomplete="off" spellcheck="false" placeholder="Client secret" aria-label="Google client secret">
+            </div>
+            <div class="row" style="margin-top:6px"><button class="btn" type="button" id="google-connect">Connect Google</button><span class="help" id="google-status">Not connected</span></div>
+            <span class="help">Create a free "Desktop app" OAuth client in Google Cloud (steps in the README), paste it here, then Connect.</span></div>
+          <div class="field"><label>Phone (Telegram)</label>
+            <div class="two">
+              <input type="password" id="telegram_token" autocomplete="off" spellcheck="false" placeholder="Bot token from @BotFather" aria-label="Telegram bot token">
+              <input type="text" id="telegram_user" spellcheck="false" placeholder="Your Telegram ID" aria-label="Your Telegram ID">
+            </div>
+            <span class="help">Message your bot once; it replies with your ID. Paste it here and Save. The bot answers only you.</span></div>
+        </div>
+
+        <details class="card group">
+          <summary style="cursor:pointer;font-weight:600">Advanced</summary>
+          <div class="field"><label for="agent_engine">Agent engine</label>
+            <select id="agent_engine"><option value="builtin">Built-in (recommended)</option><option value="hermes">Hermes (runs in Ubuntu, needs setup/wsl-setup.sh)</option></select></div>
+          <div class="two">
+            <div class="field"><label for="agent_url">Hermes address</label><input type="text" id="agent_url" spellcheck="false"></div>
+            <div class="field"><label for="agent_key">Hermes key</label><input type="password" id="agent_key" autocomplete="off" spellcheck="false"></div>
+          </div>
+        </details>
+
+        <div class="save-bar card"><span class="help">Your keys stay on this PC and are never logged.</span><button class="btn solid" type="submit">Save changes<svg viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></svg></button></div>
       </form>
     </section>
   </main>
@@ -272,11 +376,55 @@ let S = {};          // settings
 let chat = [];       // [{role, content}]
 let streaming = null;
 
+// ---- ready-made tasks; "fill" ones put a starter sentence in the box for you to finish
+const RECIPES = [
+  { title: 'Inbox triage', tag: 'Gmail', icon: '<path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/>', desc: 'Unread email sorted by what needs you first.',
+    prompt: 'Check my unread Gmail from the last 24 hours (search "is:unread newer_than:1d", up to 25). Sort every email into: Urgent (needs action today), Important (this week), FYI, and Promotions or noise. For Urgent and Important, give the sender, a one-line summary and the action I should take. Finish with the single most important thing to do first. Do not reply to, send or delete anything.' },
+  { title: 'Morning brief', tag: 'Daily', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/>', desc: 'Today\'s meetings, urgent email and reminders in one go.',
+    prompt: 'Give me my morning brief: today\'s calendar events with times, any unread email that looks urgent, and my reminders due today. Keep it short and end with the top three things to focus on. If Gmail or Calendar is not connected, skip that part and say how to connect it.' },
+  { title: 'Today\'s agenda', tag: 'Calendar', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', desc: 'What\'s on your calendar and the free gaps.',
+    prompt: 'List my calendar for today and tomorrow with times, and point out my longest free slot each day.' },
+  { title: 'Research a topic', tag: 'Web', fill: true, icon: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>', desc: 'Searches several sources and answers with links.',
+    prompt: 'Research this and give me a short answer with 3 sources I can open: ' },
+  { title: 'Summarise a page', tag: 'Web', fill: true, icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/>', desc: 'Paste a link, get the key points.',
+    prompt: 'Open this page and summarise it in 5 bullet points, then tell me if anything needs action: ' },
+  { title: 'Daily AI news', tag: 'Schedule', icon: '<path d="M4 22h16a2 2 0 0 0 2-2V4H8v16a2 2 0 0 1-4 0V9h4"/><path d="M12 8h6M12 12h6M12 16h4"/>', desc: 'A news digest every weekday at 9 am.',
+    prompt: 'Every weekday at 9 am, search the web for the top AI news of the last 24 hours and give me a 5-bullet summary with links.' },
+  { title: 'Draft a reply', tag: 'Gmail', fill: true, icon: '<path d="M9 17 4 12l5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>', desc: 'Bravo drafts, you approve before anything is sent.',
+    prompt: 'Find the latest email from this person and draft a polite reply for me to review (do not send it yet): ' },
+  { title: 'Plan my week', tag: 'Planning', icon: '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', desc: 'Meetings plus your priorities, laid out by day.',
+    prompt: 'Look at my calendar for the next 7 days and my reminders, then suggest a simple day-by-day plan with time blocks for focused work.' },
+  { title: 'Translate', tag: 'Language', fill: true, icon: '<path d="m5 8 6 6M4 14l6-6 2-3M2 5h12M7 2h1M22 22l-5-10-5 10M14 18h6"/>', desc: 'Between English and Hindi, or any language.',
+    prompt: 'Translate this into Hindi (if it is Hindi, into English), keeping the tone: ' },
+  { title: 'What\'s on my screen?', tag: 'Screen', icon: '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>', desc: 'Explains an error, a chart or a form you\'re looking at.',
+    prompt: 'Look at my screen and explain what I\'m looking at. If there\'s an error or a form, tell me what to do next.' },
+];
+function recipeCard(r) {
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'card hover recipe';
+  b.innerHTML = `<span class="top"><span class="ico"><svg viewBox="0 0 24 24">${r.icon}</svg></span><b></b></span><small></small><span class="tag"></span>`;
+  b.querySelector('b').textContent = r.title; b.querySelector('small').textContent = r.desc; b.querySelector('.tag').textContent = r.tag;
+  b.addEventListener('click', () => {
+    if (!r.fill) return ask(r.prompt);
+    show('agent'); const m = $('#msg'); m.value = r.prompt; autosize(); m.focus(); m.setSelectionRange(m.value.length, m.value.length);
+  });
+  return b;
+}
+$('#recipes').replaceChildren(...RECIPES.map(recipeCard));
+$('#home-recipes').replaceChildren(...RECIPES.slice(0, 3).map(recipeCard));
+
+// ---- theme (dark by default; the choice is remembered on this PC)
+function setTheme(t) { document.documentElement.classList.toggle('dark', t !== 'light'); try { localStorage.setItem('theme', t); } catch (e) {} }
+try { setTheme(localStorage.getItem('theme') || 'dark'); } catch (e) {}
+$('#theme').addEventListener('click', () => setTheme(document.documentElement.classList.contains('dark') ? 'light' : 'dark'));
+
 $('#cloud_preset').addEventListener('change', (ev) => {
   if (!ev.target.value) return;
   const [url, model] = ev.target.value.split('|');
-  $('#cloud_url').value = url; $('#cloud_model').value = model; $('#cloud_model').focus();
+  $('#cloud_url').value = url; $('#cloud_model').value = model; $('#cloud_key').focus();
 });
+const MODEL_HELP = { fast: 'Quickest, fine for clear speech.', balanced: 'Good accuracy for most voices.', best: 'Most accurate, especially for Hindi and other languages. Slower on a laptop CPU.' };
+function modelHelp() { $('#model-help').textContent = (MODEL_HELP[$('#whisper_model').value] || '') + ($('#language').value === 'en' ? ' Uses an English-only model.' : ''); }
+$('#whisper_model').addEventListener('change', modelHelp); $('#language').addEventListener('change', modelHelp);
 
 $('#google-connect').addEventListener('click', async () => {
   if (!(await saveForm())) return;
@@ -291,17 +439,18 @@ document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click
 function show(page) {
   document.querySelectorAll('main > section').forEach((s) => (s.hidden = s.id !== page));
   document.querySelectorAll('nav button').forEach((b) => (b.dataset.page === page ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  $('main').scrollTop = 0;
   if (page === 'history') loadHistory();
   if (page === 'agent') $('#msg').focus();
 }
 
-function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 1800); }
-const keyName = (k) => k.replace(/\b\w/g, (c) => c.toUpperCase());
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2000); }
+const keyName = (k) => (k === 'off' ? 'Off' : k.replace(/\b\w/g, (c) => c.toUpperCase()));
 const when = (ts) => new Date(ts * 1000).toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
 // ---- rendering (textContent only: transcripts are untrusted text)
 function itemEl(e, withActions = true) {
-  const d = document.createElement('div'); d.className = 'item';
+  const d = document.createElement('div'); d.className = 'card item';
   const meta = document.createElement('div'); meta.className = 'meta';
   const badge = document.createElement('span'); badge.className = 'badge' + (e.mode === 'agent' ? ' agent' : '');
   badge.textContent = e.mode === 'agent' ? 'Agent' : 'Dictation';
@@ -322,32 +471,43 @@ function iconBtn(label, path, fn) {
   b.innerHTML = `<svg viewBox="0 0 24 24">${path}</svg>`; b.addEventListener('click', fn); return b;
 }
 function renderList(el, items, emptyText) {
+  el.classList.add('stagger');
   el.replaceChildren(...(items.length ? items.map((e) => itemEl(e)) : [Object.assign(document.createElement('div'), { className: 'empty', textContent: emptyText })]));
 }
-function renderStats(st) {
-  $('#s-tasks').textContent = st.agent_turns.toLocaleString(); $('#s-total').textContent = st.words_total.toLocaleString();
-  $('#s-wpm').textContent = st.wpm; $('#s-saved').textContent = st.minutes_saved;
+function countUp(el, to) {
+  to = Number(to) || 0;
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !to) { el.textContent = to.toLocaleString(); return; }
+  const t0 = performance.now();
+  const step = (t) => { const k = Math.min(1, (t - t0) / 700); el.textContent = Math.round(to * (1 - (1 - k) ** 3)).toLocaleString(); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
 }
+function renderStats(st) { countUp($('#s-tasks'), st.agent_turns); countUp($('#s-total'), st.words_total); countUp($('#s-wpm'), st.wpm); countUp($('#s-saved'), st.minutes_saved); }
 async function refreshStats() { renderStats(await api().get_stats()); }
-async function loadHistory() { renderList($('#hist'), await api().list_history($('#q').value), 'Nothing here yet. Hold your dictate key and say something.'); }
+async function loadHistory() { renderList($('#hist'), await api().list_history($('#q').value), 'Nothing here yet. Give Bravo a task or hold your dictation key and speak.'); }
 let qTimer; $('#q').addEventListener('input', () => { clearTimeout(qTimer); qTimer = setTimeout(loadHistory, 200); });
 $('#clear').addEventListener('click', async () => { if (await api().clear_history()) { loadHistory(); refreshStats(); toast('History cleared'); } });
 
 // ---- settings + dictionary
 function fillSettings() {
   for (const [k, v] of Object.entries(S)) { const el = $('#settings-form').elements[k]; if (!el) continue; if (el.type === 'checkbox') el.checked = v; else el.value = v; }
-  ['#k-dictate'].forEach((s) => ($(s).textContent = keyName(S.dictate_hotkey)));
-  ['#k-agent', '#k-agent2'].forEach((s) => ($(s).textContent = keyName(S.agent_hotkey)));
-  renderDict();
+  keyHint('#dictate-hint', S.dictate_hotkey, ', speak, release. The text appears where your cursor is.', 'Turned off. Turn it on in Settings, under Voice.');
+  keyHint('#agent-hint', S.agent_hotkey, ' and say it, or type in the Agent tab.', 'Type your task in the Agent tab. (Voice key is off in Settings.)');
+  modelHelp(); renderDict();
 }
 async function saveForm() {
   const next = { ...S };
   // form fields only: "dictionary" is also a page id
   for (const k of Object.keys(S)) { const el = $('#settings-form').elements[k]; if (!el) continue; next[k] = el.type === 'checkbox' ? el.checked : el.value.trim(); }
-  if (next.dictate_hotkey === next.agent_hotkey) { toast('Pick two different keys'); return false; }
+  if (next.dictate_hotkey === next.agent_hotkey && next.agent_hotkey !== 'off') { toast('Pick two different keys'); return false; }
   S = await api().save_settings(next); fillSettings(); return true;
 }
 $('#settings-form').addEventListener('submit', async (ev) => { ev.preventDefault(); if (await saveForm()) toast('Saved'); });
+function keyHint(sel, key, rest, offText) {
+  const el = $(sel);
+  if (key === 'off') { el.textContent = offText; return; }
+  const k = document.createElement('kbd'); k.textContent = keyName(key);
+  el.replaceChildren('Hold ', k, rest);
+}
 function renderDict() {
   const rows = Object.entries(S.dictionary || {}).map(([from, to]) => {
     const r = document.createElement('div'); r.className = 'dict-row';
@@ -366,11 +526,11 @@ $('#dict-add').addEventListener('submit', (ev) => {
 });
 
 // ---- agent chat
-function bubble(role, text) { const m = document.createElement('div'); m.className = `msg ${role}`; m.textContent = text; $('#thread').append(m); m.scrollIntoView({ block: 'end' }); return m; }
+function bubble(role, text) { const m = document.createElement('div'); m.className = `msg ${role}`; m.textContent = text; $('#thread').append(m); m.scrollIntoView({ block: 'end', behavior: 'smooth' }); return m; }
 function setBusy(b) { $('#send').disabled = b; $('#msg').disabled = b; }
 async function ask(text) {
   text = text.trim(); if (!text || streaming) return;
-  show('agent'); $('#chips').hidden = true;
+  show('agent'); $('#recipes-wrap').hidden = true;
   chat.push({ role: 'user', content: text }); bubble('user', text);
   streaming = bubble('bot', ''); streaming.classList.add('typing'); streaming.dataset.progress = 'Thinking'; setBusy(true);
   await api().send_chat(chat);
@@ -378,9 +538,8 @@ async function ask(text) {
 $('#composer').addEventListener('submit', (ev) => { ev.preventDefault(); const t = $('#msg').value; $('#msg').value = ''; autosize(); ask(t); });
 $('#msg').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('#composer').requestSubmit(); } });
 $('#msg').addEventListener('input', autosize);
-function autosize() { const m = $('#msg'); m.style.height = 'auto'; m.style.height = Math.min(m.scrollHeight, 140) + 'px'; }
-document.querySelectorAll('.chip').forEach((c) => c.addEventListener('click', () => ask(c.textContent)));
-$('#new-chat').addEventListener('click', () => { chat = []; streaming = null; setBusy(false); $('#thread').replaceChildren(); $('#chips').hidden = false; api().stop_speaking(); });
+function autosize() { const m = $('#msg'); m.style.height = 'auto'; m.style.height = Math.min(m.scrollHeight, 160) + 'px'; }
+$('#new-chat').addEventListener('click', () => { chat = []; streaming = null; setBusy(false); $('#thread').replaceChildren(); $('#recipes-wrap').hidden = false; api().stop_speaking(); });
 
 // ---- events pushed from Python
 window.Bravo = {
@@ -388,7 +547,7 @@ window.Bravo = {
     if (type === 'progress' && streaming) streaming.dataset.progress = data;
     if (type === 'chat_delta' && streaming) { delete streaming.dataset.progress; streaming.textContent += data; streaming.scrollIntoView({ block: 'end' }); }
     if (type === 'chat_done' && streaming) { streaming.classList.remove('typing'); chat.push({ role: 'assistant', content: streaming.textContent }); streaming = null; setBusy(false); refreshStats(); }
-    if (type === 'chat_error') { if (streaming) { streaming.classList.remove('typing'); streaming.classList.add('err'); streaming.textContent = data; streaming = null; } setBusy(false); }
+    if (type === 'chat_error') { if (streaming) { streaming.classList.remove('typing'); streaming.classList.add('err'); delete streaming.dataset.progress; streaming.textContent = data; streaming = null; } setBusy(false); }
     if (type === 'voice_ask') ask(data);
     if (type === 'notify') { bubble('bot', data); toast(data); }
     if (type === 'history_added') { refreshStats(); api().list_history('').then((h) => renderList($('#recent'), h.slice(0, 5), '')); }
@@ -403,7 +562,7 @@ async function boot() {
   const b = await api().get_bootstrap();
   S = b.settings; fillSettings(); renderStats(b.stats);
   if (b.google) $('#google-status').textContent = 'Connected';
-  renderList($('#recent'), b.history.slice(0, 5), 'Your dictations and questions will show up here.');
+  renderList($('#recent'), b.history.slice(0, 5), 'Your tasks and dictations will show up here.');
   const h = new Date().getHours(); $('#greet').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
   Bravo.emit('status', b.status);
 }
@@ -411,19 +570,21 @@ window.addEventListener('pywebviewready', boot);
 // Browser preview without the Python app: a fake API with sample data.
 setTimeout(() => { if (!window.pywebview) { window.pywebview = { api: window.__mockApi() }; boot(); } }, 300);
 window.__mockApi = () => {
-  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'small', language: 'auto', remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', image_model: '', google_client_id: '', google_client_secret: '', telegram_token: '', telegram_user: '', dictionary: { hermes: 'Hermes', anouk: 'Anouk' } };
+  const now = Date.now() / 1000; let settings = { dictate_hotkey: 'right ctrl', agent_hotkey: 'right alt', whisper_model: 'balanced', language: 'auto', show_pill: true, remove_fillers: true, polish_with_ai: false, speak_replies: true, agent_engine: 'builtin', agent_url: 'http://localhost:8642/v1', agent_key: 'preview', ollama_url: '', ollama_model: 'gemma4:e4b', cloud_url: '', cloud_key: '', cloud_model: '', image_model: '', google_client_id: '', google_client_secret: '', telegram_token: '', telegram_user: '', dictionary: { hermes: 'Hermes', anouk: 'Anouk' } };
   const hist = [
     { id: 'a', ts: now - 300, mode: 'dictate', words: 19, text: 'Hi Priya, sharing the revised invoice for October. Please confirm the GST number before Friday.' },
     { id: 'b', ts: now - 1800, mode: 'agent', words: 9, text: 'Remind me to send the invoice tomorrow at 9 am', reply: 'Done. Added "2026-10-13 09:00 Send invoice" to reminders.md.' },
     { id: 'c', ts: now - 7200, mode: 'dictate', words: 12, text: 'Meeting notes: launch moved to Monday, labels to be printed by Saturday.' },
   ];
   return {
-    get_bootstrap: async () => ({ settings, stats: { words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }, history: hist, status: { mic: 'Speech: Whisper small', micOk: true, agent: 'Agent: gemma4:e4b (local)', agentOk: true } }),
+    get_bootstrap: async () => ({ settings, stats: { words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }, history: hist, status: { mic: 'Speech: small', micOk: true, agent: 'Agent: gemma4:e4b (local)', agentOk: true } }),
     get_stats: async () => ({ words_today: 431, words_total: 6120, wpm: 138, minutes_saved: 103, agent_turns: 12 }),
     list_history: async (q) => hist.filter((e) => !q || e.text.toLowerCase().includes(q.toLowerCase())),
     delete_history: async () => true, clear_history: async () => true, copy_text: async () => true, stop_speaking: async () => true,
     save_settings: async (s) => (settings = s), connect_google: async () => 'Google connected (preview)',
-    send_chat: async () => { const words = 'You have one reminder today: send the invoice to Kavya Traders at 9 am.'.split(' '); let i = 0; const t = setInterval(() => { if (i < words.length) Bravo.emit('chat_delta', (i ? ' ' : '') + words[i++]); else { clearInterval(t); Bravo.emit('chat_done'); } }, 60); },
+    send_chat: async () => { const words = 'Urgent: 1 email from your bank about a card statement. Important: 2 replies from recruiters. Do first: answer the interview invite.'.split(' '); let i = 0;
+      setTimeout(() => Bravo.emit('progress', 'Checking Gmail'), 200);
+      const t = setInterval(() => { if (i < words.length) Bravo.emit('chat_delta', (i ? ' ' : '') + words[i++]); else { clearInterval(t); Bravo.emit('chat_done'); } }, 60); },
   };
 };
 </script>

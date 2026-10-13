@@ -39,6 +39,14 @@ Telegram from your phone. As a bonus, the same hotkey gives you free, private di
 | "Open YouTube", "open Notepad", "daily brief" | Done in under a second, no AI model involved | Nothing |
 | *(hold Right Ctrl and speak)* | Dictation: typed into whatever app has your cursor | Nothing |
 
+**Ready-made recipes** (one click in the Agent tab): inbox triage sorted by urgency, morning brief, today's agenda,
+research a topic, summarise a page, daily AI news, draft a reply, plan my week, translate, and what's on my screen.
+
+**Speech in your language:** pick from 19 languages, including Hindi, Bengali, Tamil, Telugu, Marathi and Gujarati,
+or let Bravo auto-detect mixed English and Hindi. Choose Fast, Balanced or Best quality; English uses English-only
+models, which are more accurate. Prefer a clean screen? Hide the floating bar so it only appears while you talk, or
+turn dictation off entirely.
+
 ## Quick start (Windows 10/11, 8–16 GB RAM, no GPU needed)
 
 1. Download this repo (green **Code** button → Download ZIP) and unzip it.

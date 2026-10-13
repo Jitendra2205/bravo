@@ -158,6 +158,8 @@ class Engine:
     # ---------- startup
     def boot(self):
         self.register_hotkeys()
+        if self.pill:
+            self.pill.set_idle_visible(self.settings["show_pill"])
         threading.Thread(target=self.load_model, daemon=True).start()
         threading.Thread(target=self.agent_watch, daemon=True).start()
         threading.Thread(target=self.scheduler, daemon=True).start()
@@ -273,12 +275,14 @@ class Engine:
         keyboard.unhook_all()
         for mode in ("dictate", "agent"):
             key = self.settings[f"{mode}_hotkey"]
+            if key == "off":           # the owner turned this key off in Settings
+                continue
             keyboard.on_press_key(key, lambda e, m=mode: self.start(m))
             keyboard.on_release_key(key, lambda e, m=mode: self.stop(m))
 
     def load_model(self):
-        name = self.settings["whisper_model"]
-        self.emit("status", {"mic": f"Speech: loading {name}", "micOk": None})
+        name = core.speech_model(self.settings)
+        self.emit("status", {"mic": f"Speech: loading {name} (first time downloads it)", "micOk": None})
         try:
             self.model = WhisperModel(name, device="cpu", compute_type="int8")
             self.model_name = name
@@ -749,7 +753,9 @@ class Api:
         e.settings = core.save_settings(settings if isinstance(settings, dict) else {})
         if (old["dictate_hotkey"], old["agent_hotkey"]) != (e.settings["dictate_hotkey"], e.settings["agent_hotkey"]):
             e.register_hotkeys()
-        if old["whisper_model"] != e.settings["whisper_model"]:
+        if e.pill:
+            e.pill.set_idle_visible(e.settings["show_pill"])
+        if core.speech_model(old) != core.speech_model(e.settings):
             e.model = None
             threading.Thread(target=e.load_model, daemon=True).start()
         e.emit("status", {"agent": e.agent_label(True), "agentOk": True})   # show the new cloud model at once

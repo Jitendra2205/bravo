@@ -42,11 +42,16 @@ class Pill:
         self.levels = [0.0] * BARS
         self.state = ("idle", "dictate", "", "")
         self.tick = 0
+        self.idle_visible, self.shown = True, True
         threading.Thread(target=self._run, daemon=True, name="pill").start()
 
     # ---- thread-safe API
     def set_state(self, state, mode="dictate", text="", sub=""):
         self.q.put(("state", (state, mode, text, sub)))
+
+    def set_idle_visible(self, visible):
+        """False: the bar hides when idle and shows only while you hold a key or Bravo is working."""
+        self.q.put(("idle_visible", bool(visible)))
 
     def set_level(self, value):
         self.q.put(("level", float(value)))
@@ -73,7 +78,9 @@ class Pill:
         try:
             while True:
                 kind, val = self.q.get_nowait()
-                if kind == "state":
+                if kind == "idle_visible":
+                    self.idle_visible = val
+                elif kind == "state":
                     self.state = val
                     if val[0] != "listening":
                         self.levels = [0.0] * BARS
@@ -82,6 +89,14 @@ class Pill:
         except queue.Empty:
             pass
         self.tick += 1
+        want = self.idle_visible or self.state[0] != "idle"
+        if want != self.shown:
+            self.shown = want
+            if want:
+                self.root.deiconify()
+                self.root.attributes("-topmost", True)
+            else:
+                self.root.withdraw()
         self._draw()
         self.root.after(40, self._pump)
 

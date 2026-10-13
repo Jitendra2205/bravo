@@ -26,8 +26,9 @@ def migrate_old_data():
 DEFAULTS = {
     "dictate_hotkey": "right ctrl",
     "agent_hotkey": "right alt",
-    "whisper_model": "small",          # tiny | base | small | medium
-    "language": "auto",                # auto | en | hi
+    "whisper_model": "balanced",       # speech quality: fast | balanced | best
+    "language": "auto",                # auto, or a Whisper language code such as en, hi, ta
+    "show_pill": True,                 # floating bar always visible; off = only while you hold a key
     "remove_fillers": True,
     "polish_with_ai": False,           # rewrite dictation with the local model (slower on CPU)
     "speak_replies": True,
@@ -81,7 +82,19 @@ def load_settings(path=None):
         for k, v in saved.items():
             if k in DEFAULTS and type(v) is type(DEFAULTS[k]):
                 s[k] = v
+    s["whisper_model"] = LEGACY_SPEECH.get(s["whisper_model"], s["whisper_model"])
     return s
+
+
+# Speech quality -> Whisper model: (English only, every other language). English-only models are more accurate
+# for English at the same size; large-v3-turbo is the best multilingual model that is still usable on a CPU.
+SPEECH = {"fast": ("base.en", "base"), "balanced": ("small.en", "small"), "best": ("distil-large-v3", "large-v3-turbo")}
+LEGACY_SPEECH = {"tiny": "fast", "base": "fast", "small": "balanced", "medium": "best"}
+
+
+def speech_model(settings):
+    en, other = SPEECH.get(settings["whisper_model"], SPEECH["balanced"])
+    return en if settings["language"] == "en" else other
 
 
 def save_settings(settings, path=None):
