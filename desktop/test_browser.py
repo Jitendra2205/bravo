@@ -46,3 +46,12 @@ class BrowserTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InboxTest(unittest.TestCase):
+    def test_inbox_tool_is_registered_and_routed(self):
+        import browser
+        self.assertIn("browser_inbox", [t["function"]["name"] for t in browser.SPECS])
+        b = browser.Browser.__new__(browser.Browser)
+        b.inbox = lambda provider="gmail": f"opened {provider}"
+        self.assertEqual(b.run("browser_inbox", {"provider": "outlook"}), "opened outlook")

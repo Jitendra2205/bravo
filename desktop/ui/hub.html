@@ -378,8 +378,8 @@ let streaming = null;
 
 // ---- ready-made tasks; "fill" ones put a starter sentence in the box for you to finish
 const RECIPES = [
-  { title: 'Inbox triage', tag: 'Gmail', icon: '<path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/>', desc: 'Unread email sorted by what needs you first.',
-    prompt: 'Check my unread Gmail from the last 24 hours (search "is:unread newer_than:1d", up to 25). Sort every email into: Urgent (needs action today), Important (this week), FYI, and Promotions or noise. For Urgent and Important, give the sender, a one-line summary and the action I should take. Finish with the single most important thing to do first. Do not reply to, send or delete anything.' },
+  { title: 'Inbox triage', tag: 'Gmail or Outlook', icon: '<path d="M4 4h16v16H4z"/><path d="m4 6 8 7 8-7"/>', desc: 'Unread email sorted by what needs you first.',
+    prompt: 'Open my inbox in the browser (Gmail, or Outlook if I say so) and read my unread email from the last day. Sort every email into: Urgent (needs action today), Important (this week), FYI, and Promotions or noise. For Urgent and Important, give the sender, a one-line summary and the action I should take. Finish with the single most important thing to do first. Do not reply to, send, archive or delete anything.' },
   { title: 'Morning brief', tag: 'Daily', icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2"/>', desc: 'Today\'s meetings, urgent email and reminders in one go.',
     prompt: 'Give me my morning brief: today\'s calendar events with times, any unread email that looks urgent, and my reminders due today. Keep it short and end with the top three things to focus on. If Gmail or Calendar is not connected, skip that part and say how to connect it.' },
   { title: 'Today\'s agenda', tag: 'Calendar', icon: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>', desc: 'What\'s on your calendar and the free gaps.',

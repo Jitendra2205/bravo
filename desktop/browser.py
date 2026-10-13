@@ -44,6 +44,11 @@ SPECS = [
         "parameters": {"type": "object", "required": ["ref", "text"], "properties": {
             "ref": {"type": "integer"}, "text": {"type": "string"}, "enter": {"type": "boolean"}}}}},
     {"type": "function", "function": {
+        "name": "browser_inbox",
+        "description": "Open the owner's email inbox (Gmail or Outlook) in Bravo's browser and return it. If they are "
+                       "not signed in, the window waits for them to sign in themselves (up to 90 s).",
+        "parameters": {"type": "object", "properties": {"provider": {"type": "string", "enum": ["gmail", "outlook"]}}}}},
+    {"type": "function", "function": {
         "name": "browser_back",
         "description": "Go back one page. Returns the new page.",
         "parameters": {"type": "object", "properties": {}}}},
@@ -158,7 +163,31 @@ class Browser:
             return self._snapshot(page)
         return self._call(go)
 
+    INBOX = {"gmail": ("https://mail.google.com/mail/u/0/#inbox", "mail.google.com"),
+             "outlook": ("https://outlook.office.com/mail/", "outlook.")}
+
+    def inbox(self, provider="gmail"):
+        url, host = self.INBOX.get(str(provider).lower(), self.INBOX["gmail"])
+        def go(pw):
+            page = self._ensure(pw)
+            page.bring_to_front()
+            page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            for _ in range(45):    # sign-in is the owner's job: Bravo never types passwords
+                u = page.url.lower()
+                if host in u and "login" not in u and "accounts.google" not in u:
+                    break
+                page.wait_for_timeout(2000)
+            else:
+                return ("The owner is not signed in. Tell them to sign in in the Bravo browser window "
+                        "(it remembers them next time), then ask again.")
+            try:
+                page.wait_for_selector('[role="main"], [role="grid"], table', timeout=15000)
+            except Exception:
+                pass
+            return self._snapshot(page)
+        return self._call(go)
+
     def run(self, name, args):
         fn = {"browser_open": self.open, "browser_read": self.read, "browser_click": self.click,
-              "browser_type": self.type, "browser_back": self.back}[name]
+              "browser_type": self.type, "browser_back": self.back, "browser_inbox": self.inbox}[name]
         return fn(**{k: v for k, v in args.items() if k in fn.__code__.co_varnames})
