@@ -304,7 +304,7 @@ class EngineTest(unittest.TestCase):
             yield
         with mock.patch.object(core, "ollama_chat_stream", offline):
             self.e.chat([{"role": "user", "content": "hi"}])
-        self.assertIn("Can't reach Ollama", self.events("chat_error")[-1])
+        self.assertIn("needs an AI brain", self.events("chat_error")[-1])
 
     def test_chat_success_and_errors(self):
         self.e.settings["agent_engine"] = "hermes"
