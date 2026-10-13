@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import sys
 import threading
 import time
 import urllib.request
@@ -48,7 +49,8 @@ DEFAULTS = {
     "dictionary": {"hermes": "Hermes", "olama": "Ollama"},
 }
 
-LOG = Path(__file__).parent / "logs" / "bravo.log"
+# Installed (PyInstaller) copies live in a read-only Program folder, so their log goes to AppData.
+LOG = (APP_DIR if getattr(sys, "frozen", False) else Path(__file__).parent) / "logs" / "bravo.log"
 # Telegram bot tokens, Google/OpenAI/Groq-style keys and bearer tokens never reach the log file.
 SECRET_RE = re.compile(r"\d{6,}:[\w-]{30,}|\b(?:AIza|AQ\.|sk-|gsk_|ya29\.)[\w.-]{16,}|Bearer\s+[\w.-]+")
 

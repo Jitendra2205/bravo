@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import re
+import sys
 import urllib.parse
 import webbrowser
 from pathlib import Path
@@ -11,7 +12,7 @@ from pathlib import Path
 import core
 
 WORKSPACE = Path(os.getenv("BRAVO_WORKSPACE") or r"C:\AgentWork")
-_BRIEF = Path(__file__).resolve().parents[1] / "skills" / "daily-brief" / "brief.py"
+_BRIEF = (Path(sys._MEIPASS) if getattr(sys, "frozen", False) else Path(__file__).resolve().parents[1]) / "skills" / "daily-brief" / "brief.py"
 
 SITES = {"youtube": "https://www.youtube.com", "gmail": "https://mail.google.com", "google": "https://www.google.com",
          "whatsapp": "https://web.whatsapp.com", "linkedin": "https://www.linkedin.com", "github": "https://github.com",

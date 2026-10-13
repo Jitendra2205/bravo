@@ -15,7 +15,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-LOGS = Path(__file__).parent / "logs"
+FROZEN = getattr(sys, "frozen", False)          # running as the installed Bravo.exe
+LOGS = (Path(os.getenv("APPDATA") or Path.home()) / "Bravo" / "logs") if FROZEN else Path(__file__).parent / "logs"
 
 
 def _crash(kind, value, tb):
@@ -42,7 +43,7 @@ import telegram
 import tools
 from pill import Pill
 
-UI = Path(__file__).parent / "ui"
+UI = Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) / "ui"   # bundled files live in _MEIPASS
 CLOUD_RULES = (
     "You can act for the owner: reminders, AgentWork files, opening apps, and a real browser window "
     "(browser_* tools) to search, read websites, click and type. Work step by step: open a page, read its "
@@ -656,7 +657,8 @@ class Engine:
             return
         except OSError as e:
             core.log(f"agent unreachable ({s['agent_engine']}): {e}")
-            msg = ("Can't reach Ollama. Open the Ollama app from the Start menu (it should show in the taskbar tray), then try again."
+            msg = ("Bravo needs an AI brain. Easiest: Settings > Cloud model, choose Groq (free), paste a free key from "
+                   "console.groq.com and Save. For fully offline use, install Ollama from ollama.com and open it."
                    if builtin else "Can't reach Hermes. Switch Settings > Agent engine to Built-in, or open Ubuntu and run: hermes gateway")
             self.emit("chat_error", msg)
             self.pill_flash("error", "agent", "Agent offline")
@@ -780,7 +782,7 @@ def close_previous_copy(pid_file=None):
     if old and old != os.getpid():
         found = subprocess.run(["tasklist", "/FI", f"PID eq {old}", "/NH"], capture_output=True, text=True,
                                creationflags=NO_WINDOW).stdout.lower()
-        if "python" in found:
+        if "python" in found or "bravo" in found:
             subprocess.run(["taskkill", "/F", "/PID", str(old)], capture_output=True, creationflags=NO_WINDOW)
             core.log(f"closed previous Bravo (pid {old})")
     pid_file.parent.mkdir(parents=True, exist_ok=True)
@@ -811,5 +813,23 @@ def main():
     sys.exit(0)
 
 
+def selftest(out):
+    """Used by the installer build: proves the packaged app loads every heavy part, without opening windows.
+    Writes the result to a file because the windowed Bravo.exe has no console."""
+    try:
+        import ctranslate2, faster_whisper.vad, playwright.sync_api, PIL.ImageGrab  # noqa: F401
+        for f in ("hub.html", "bravo.ico", "bravo-logo.svg"):
+            assert (UI / f).exists(), f"missing {f}"
+        assert tools._BRIEF.exists(), "missing daily brief"
+        Path(out).write_text("selftest ok")
+        os._exit(0)
+    except BaseException:
+        Path(out).write_text(traceback.format_exc())
+        os._exit(1)
+
+
 if __name__ == "__main__":
-    main()
+    if "--selftest" in sys.argv:
+        selftest(sys.argv[-1])
+    else:
+        main()
