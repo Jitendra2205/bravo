@@ -6,3 +6,4 @@ keyboard>=0.13
 pyperclip>=1.8
 playwright>=1.45
 pillow>=10.0
+edge-tts>=6.1

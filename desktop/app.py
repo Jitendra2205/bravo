@@ -688,21 +688,44 @@ class Engine:
 
     def speak(self, text):
         self.stop_speaking()
-        # Hindi script gets a Hindi voice when Windows has one installed; otherwise the default voice is used.
+        self._tts_id = getattr(self, "_tts_id", 0) + 1
+        threading.Thread(target=self._speak, args=(text[:4000], self._tts_id), daemon=True).start()
+
+    def _speak(self, text, tid):
+        # Hindi script: Microsoft's online neural voice (free, no key) sounds natural; Windows' own voice is the offline fallback.
+        if re.search("[\u0900-\u097F]", text):
+            try:
+                import asyncio
+                import edge_tts
+                mp3 = core.APP_DIR / "speech.mp3"
+                asyncio.run(edge_tts.Communicate(text, "hi-IN-SwaraNeural").save(str(mp3)))
+                if tid == self._tts_id:
+                    play = ("Add-Type -AssemblyName presentationCore; $p = New-Object System.Windows.Media.MediaPlayer; "
+                            "$p.Open([uri]$args[0]); $p.Play(); Start-Sleep -Milliseconds 800; "
+                            "while (-not $p.NaturalDuration.HasTimeSpan) { Start-Sleep -Milliseconds 100 }; "
+                            "Start-Sleep -Milliseconds ([int]$p.NaturalDuration.TimeSpan.TotalMilliseconds + 300)")
+                    self.tts = subprocess.Popen(["powershell", "-NoProfile", "-Command", play, str(mp3)],
+                                                creationflags=NO_WINDOW)
+                return
+            except Exception as e:   # offline, or edge-tts missing
+                core.log(f"hindi voice fallback: {e}")
         script = ("Add-Type -AssemblyName System.Speech; $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; "
                   "$t = [Console]::In.ReadToEnd(); "
                   "if ($t -match '[\u0900-\u097F]') { $v = $s.GetInstalledVoices() | Where-Object "
                   "{ $_.VoiceInfo.Culture.Name -eq 'hi-IN' } | Select-Object -First 1; "
                   "if ($v) { $s.SelectVoice($v.VoiceInfo.Name) } }; $s.Speak($t)")
         try:   # text goes through stdin, never into the command line
+            if tid != self._tts_id:
+                return
             self.tts = subprocess.Popen(["powershell", "-NoProfile", "-Command", script], stdin=subprocess.PIPE,
                                         creationflags=NO_WINDOW, text=True, encoding="utf-8")
-            self.tts.stdin.write(text[:4000])
+            self.tts.stdin.write(text)
             self.tts.stdin.close()
         except OSError:
             self.tts = None
 
     def stop_speaking(self):
+        self._tts_id = getattr(self, "_tts_id", 0) + 1
         if self.tts and self.tts.poll() is None:
             self.tts.kill()
         self.tts = None
