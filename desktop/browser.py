@@ -4,9 +4,19 @@ with its own Bravo profile, so the owner's normal browser profile is never touch
 Playwright's sync API is bound to the thread that started it, so every call runs on one worker thread.
 """
 import queue
+import re
 import threading
 
 import core
+
+# Inbox actions the agent must never take itself, whatever a page or the model says. Enforced in code, not in the prompt.
+MAIL_HOSTS = ("mail.google.com", "outlook.office.com", "outlook.live.com", "outlook.office365.com")
+RISKY_LABEL = re.compile(r"\b(send|reply|forward|delete|trash|archive|spam|report|discard|unsubscribe|empty)\b", re.I)
+
+
+def risky_on_mail(url, label):
+    """True when the agent must not click or press Enter here: sending, replying, deleting or archiving mail."""
+    return any(h in str(url).lower() for h in MAIL_HOSTS) and bool(RISKY_LABEL.search(str(label)))
 
 SNAPSHOT_JS = r"""() => {
   document.querySelectorAll('[data-bravo]').forEach(e => e.removeAttribute('data-bravo'));
@@ -140,7 +150,11 @@ class Browser:
     def click(self, ref):
         def go(pw):
             page = self._ensure(pw)
-            self._el(page, ref).click(timeout=8000)
+            el = self._el(page, ref)
+            label = (el.get_attribute("aria-label") or el.inner_text(timeout=2000) or "")
+            if risky_on_mail(page.url, label):
+                return "Refused: Bravo never sends, replies, deletes or archives mail. Ask the owner to do it themselves."
+            el.click(timeout=8000)
             return self._snapshot(page)
         return self._call(go)
 
@@ -152,6 +166,9 @@ class Browser:
                 return "Refused: Bravo never types passwords. Ask the owner to type it themselves."
             el.fill(str(text), timeout=8000)
             if enter:
+                hint = (el.get_attribute("aria-label") or el.get_attribute("placeholder") or "")
+                if risky_on_mail(page.url, "send") and "search" not in hint.lower():
+                    return "Refused: pressing Enter here could send a mail. Ask the owner to send it themselves."
                 el.press("Enter")
             return self._snapshot(page)
         return self._call(go)

@@ -55,3 +55,15 @@ class InboxTest(unittest.TestCase):
         b = browser.Browser.__new__(browser.Browser)
         b.inbox = lambda provider="gmail": f"opened {provider}"
         self.assertEqual(b.run("browser_inbox", {"provider": "outlook"}), "opened outlook")
+
+
+class MailGuardTest(unittest.TestCase):
+    def test_blocks_send_reply_delete_on_mail_only(self):
+        from browser import risky_on_mail
+        gmail = "https://mail.google.com/mail/u/0/#inbox"
+        self.assertTrue(risky_on_mail(gmail, "Send ‪(Ctrl-Enter)‬"))
+        self.assertTrue(risky_on_mail(gmail, "Archive"))
+        self.assertTrue(risky_on_mail("https://outlook.office.com/mail/", "Delete"))
+        self.assertFalse(risky_on_mail(gmail, "Inbox"))
+        self.assertFalse(risky_on_mail(gmail, "Search mail"))
+        self.assertFalse(risky_on_mail("https://example.com/send-gift", "Send"))   # only mail sites are guarded
