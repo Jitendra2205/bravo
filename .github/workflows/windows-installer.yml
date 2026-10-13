@@ -11,6 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: desktop
@@ -24,10 +25,14 @@ jobs:
       - run: pip install -r requirements.txt pyinstaller
       - run: pyinstaller --noconfirm bravo.spec
       - name: Self-test the packaged app
+        timeout-minutes: 5
         run: |
           $out = Join-Path $env:RUNNER_TEMP "selftest.txt"
-          $p = Start-Process dist\Bravo\Bravo.exe -ArgumentList "--selftest", $out -Wait -PassThru
+          $p = Start-Process dist\Bravo\Bravo.exe -ArgumentList "--selftest", $out -PassThru
+          $done = $p.WaitForExit(180000)
           if (Test-Path $out) { Get-Content $out } else { "no selftest output" }
+          Get-ChildItem "$env:APPDATA\Bravo\logs" -ErrorAction SilentlyContinue | ForEach-Object { "--- $($_.Name)"; Get-Content $_.FullName }
+          if (-not $done) { Stop-Process -Id $p.Id -Force; "selftest hung"; exit 1 }
           if ($p.ExitCode -ne 0) { exit 1 }
           "{0:N0} MB packaged" -f ((Get-ChildItem dist\Bravo -Recurse | Measure-Object Length -Sum).Sum / 1MB)
       - name: Build the installer

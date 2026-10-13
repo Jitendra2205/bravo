@@ -21,7 +21,7 @@ LOGS = (Path(os.getenv("APPDATA") or Path.home()) / "Bravo" / "logs") if FROZEN 
 
 def _crash(kind, value, tb):
     # pythonw has no console, so without this a startup error is invisible
-    LOGS.mkdir(exist_ok=True)
+    LOGS.mkdir(parents=True, exist_ok=True)
     with (LOGS / "crash.log").open("a", encoding="utf-8") as f:
         f.write(time.strftime("%Y-%m-%d %H:%M:%S\n") + "".join(traceback.format_exception(kind, value, tb)) + "\n")
 
@@ -29,19 +29,25 @@ def _crash(kind, value, tb):
 sys.excepthook = _crash
 threading.excepthook = lambda a: _crash(a.exc_type, a.exc_value, a.exc_traceback)
 
-import keyboard
-import numpy as np
-import pyperclip
-import sounddevice as sd
-import webview
-from faster_whisper import WhisperModel
+try:
+    import keyboard
+    import numpy as np
+    import pyperclip
+    import sounddevice as sd
+    import webview
+    from faster_whisper import WhisperModel
 
-import browser
-import core
-import integrations
-import telegram
-import tools
-from pill import Pill
+    import browser
+    import core
+    import integrations
+    import telegram
+    import tools
+    from pill import Pill
+except BaseException:
+    if "--selftest" in sys.argv:   # installer build check: report the failure in its file, never a dialog
+        Path(sys.argv[-1]).write_text(traceback.format_exc())
+        os._exit(1)
+    raise
 
 UI = Path(getattr(sys, "_MEIPASS", Path(__file__).parent)) / "ui"   # bundled files live in _MEIPASS
 CLOUD_RULES = (
