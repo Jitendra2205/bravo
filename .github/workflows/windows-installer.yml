@@ -6,6 +6,10 @@ on:
     branches: [main]
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Publish a release with this tag (e.g. v0.1.0-beta.1); leave empty to only build"
+        required: false
 permissions:
   contents: write
 jobs:
@@ -43,7 +47,8 @@ jobs:
       - name: Build the installer
         run: |
           choco install innosetup -y --no-progress
-          $env:BRAVO_VERSION = if ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME.TrimStart("v") } else { "0.0.0-dev" }
+          $tag = if ("${{ inputs.release_tag }}") { "${{ inputs.release_tag }}" } elseif ($env:GITHUB_REF_TYPE -eq "tag") { $env:GITHUB_REF_NAME } else { "" }
+          $env:BRAVO_VERSION = if ($tag) { $tag.TrimStart("v") } else { "0.0.0-dev" }
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" installer.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
           "{0:N0} MB installer" -f ((Get-Item dist\BravoSetup.exe).Length / 1MB)
@@ -51,11 +56,13 @@ jobs:
         with:
           name: BravoSetup
           path: desktop/dist/BravoSetup.exe
-      - if: github.ref_type == 'tag'
+      - if: github.ref_type == 'tag' || inputs.release_tag != ''
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ inputs.release_tag || github.ref_name }}
+          target_commitish: ${{ github.sha }}
           files: desktop/dist/BravoSetup.exe
-          prerelease: ${{ contains(github.ref_name, '-') }}   # v0.1.0-beta.1 = test build; v0.1.0 = public
+          prerelease: ${{ contains(inputs.release_tag || github.ref_name, '-') }}   # v0.1.0-beta.1 = test build; v0.1.0 = public
           body: |
             **Download `BravoSetup.exe` below**, run it, and click Next until it finishes. Bravo opens with a puppy icon in your Start menu.
             If Windows says "Windows protected your PC", click **More info**, then **Run anyway** (Bravo is open source and not code-signed yet).
