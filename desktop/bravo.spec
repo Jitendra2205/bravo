@@ -15,7 +15,7 @@ for pkg in ("faster_whisper", "ctranslate2", "onnxruntime", "webview", "playwrig
     hiddenimports += h
 
 a = Analysis([os.path.join(here, "app.py")], pathex=[here], datas=datas, binaries=binaries,
-             hiddenimports=hiddenimports, excludes=["tkinter", "matplotlib", "pytest"])
+             hiddenimports=hiddenimports, excludes=["matplotlib", "pytest"])
 pyz = PYZ(a.pure)
 exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name="Bravo", icon=os.path.join(here, "ui", "bravo.ico"),
           console=False, upx=False)
