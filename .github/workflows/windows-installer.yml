@@ -55,3 +55,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: desktop/dist/BravoSetup.exe
+          prerelease: ${{ contains(github.ref_name, '-') }}   # v0.1.0-beta.1 = test build; v0.1.0 = public
+          body: |
+            **Download `BravoSetup.exe` below**, run it, and click Next until it finishes. Bravo opens with a puppy icon in your Start menu.
+            If Windows says "Windows protected your PC", click **More info**, then **Run anyway** (Bravo is open source and not code-signed yet).
+            For fast answers, open Settings > Cloud model, choose Groq (free) and paste a free key from console.groq.com.
