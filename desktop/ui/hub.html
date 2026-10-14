@@ -61,7 +61,7 @@
   .theme:hover { color: var(--fg); background: var(--soft); }
   .theme i { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid currentColor; background: linear-gradient(90deg, currentColor 50%, transparent 50%); }
 
-  main { overflow-y: auto; padding: 40px 48px 56px; scroll-behavior: smooth; }
+  main { overflow-y: auto; min-height: 0; padding: 40px 48px 56px; scroll-behavior: smooth; }
   section { max-width: 920px; margin: 0 auto; }
   section:not([hidden]) { animation: enter .35s cubic-bezier(.2,.7,.2,1); }
   @keyframes enter { from { opacity: 0; transform: translateY(10px); } }
@@ -526,7 +526,9 @@ $('#dict-add').addEventListener('submit', (ev) => {
 });
 
 // ---- agent chat
-function bubble(role, text) { const m = document.createElement('div'); m.className = `msg ${role}`; m.textContent = text; $('#thread').append(m); m.scrollIntoView({ block: 'end', behavior: 'smooth' }); return m; }
+// Scroll only the page's <main>. scrollIntoView also scrolls <body>, which pushes the whole app out of the window.
+function toEnd() { const box = $('main'); box.scrollTop = box.scrollHeight; }
+function bubble(role, text) { const m = document.createElement('div'); m.className = `msg ${role}`; m.textContent = text; $('#thread').append(m); toEnd(); return m; }
 function setBusy(b) { $('#send').disabled = b; $('#msg').disabled = b; }
 async function ask(text) {
   text = text.trim(); if (!text || streaming) return;
@@ -545,7 +547,7 @@ $('#new-chat').addEventListener('click', () => { chat = []; streaming = null; se
 window.Bravo = {
   emit(type, data) {
     if (type === 'progress' && streaming) streaming.dataset.progress = data;
-    if (type === 'chat_delta' && streaming) { delete streaming.dataset.progress; streaming.textContent += data; streaming.scrollIntoView({ block: 'end' }); }
+    if (type === 'chat_delta' && streaming) { delete streaming.dataset.progress; streaming.textContent += data; toEnd(); }
     if (type === 'chat_done' && streaming) { streaming.classList.remove('typing'); chat.push({ role: 'assistant', content: streaming.textContent }); streaming = null; setBusy(false); refreshStats(); }
     if (type === 'chat_error') { if (streaming) { streaming.classList.remove('typing'); streaming.classList.add('err'); delete streaming.dataset.progress; streaming.textContent = data; streaming = null; } setBusy(false); }
     if (type === 'voice_ask') ask(data);

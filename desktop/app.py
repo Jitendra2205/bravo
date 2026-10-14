@@ -79,6 +79,8 @@ SCREEN_SPEC = {"type": "function", "function": {
 # The browser replaces these for the cloud brain (they open the owner's own browser and can't read pages).
 CLOUD_TOOLS = ([t for t in tools.SPECS if t["function"]["name"] not in ("open_website", "web_search")]
                + tools.CLOUD_SPECS + browser.SPECS + [SCREEN_SPEC] + integrations.SPECS)
+# The local model gets the same browser and screen tools, so the instructions above match what it can call.
+LOCAL_TOOLS = [t for t in tools.SPECS if t["function"]["name"] not in ("open_website", "web_search")] + browser.SPECS + [SCREEN_SPEC]
 
 
 class Channel:
@@ -516,8 +518,26 @@ class Engine:
         Afterwards a question only costs its own words instead of re-reading ~600 tokens."""
         s = self.settings
         msgs = [{"role": "system", "content": self.system_prompt()}, {"role": "user", "content": "hi"}]
-        for _ in core.ollama_chat_stream(s["ollama_url"], s["ollama_model"], msgs, tools.SPECS, max_tokens=1):
+        for _ in core.ollama_chat_stream(s["ollama_url"], s["ollama_model"], msgs, LOCAL_TOOLS, max_tokens=1):
             pass
+
+    def run_local_tool(self, name, args, images):
+        """One tool call for the local model. Screenshots are collected into `images` for the next message."""
+        if name == "look_at_screen":
+            try:
+                url = self.screenshot_message()["content"][1]["image_url"]["url"]
+                images.append(url.split(",", 1)[1])          # Ollama wants bare base64, not a data URL
+                return "Screenshot attached in the next message."
+            except (OSError, ImportError) as e:
+                return f"Error: could not take a screenshot ({e})"
+        if name.startswith("browser_"):
+            if self.browser is None:
+                self.browser = browser.Browser(core.APP_DIR / "browser")
+            try:
+                return self.browser.run(name, json.loads(args) if isinstance(args, str) else (args or {}))
+            except (ValueError, TypeError, KeyError) as e:
+                return f"Error: {e}"
+        return tools.run(name, args)
 
     def builtin_reply(self, messages, ch=None):
         """Quick paths, then the cloud brain if set, else Ollama. Returns the final reply text."""
@@ -550,9 +570,9 @@ class Engine:
                 core.log(f"cloud unreachable, using local: {e}")
         msgs = [{"role": "system", "content": self.system_prompt()}] + messages
         reply = ""
-        for _ in range(4):                 # at most 3 tool rounds, then a final answer
+        for _ in range(8):                 # browser tasks need several steps; capped so a CPU run stays bounded
             content, calls = "", []
-            for kind, val in core.ollama_chat_stream(s["ollama_url"], s["ollama_model"], msgs, tools.SPECS):
+            for kind, val in core.ollama_chat_stream(s["ollama_url"], s["ollama_model"], msgs, LOCAL_TOOLS):
                 if kind == "delta":
                     content += val
                     ch.say(val)
@@ -562,11 +582,17 @@ class Engine:
             if not calls:
                 return reply
             msgs.append({"role": "assistant", "content": content, "tool_calls": calls})
+            images = []
             for c in calls:
                 fn = c.get("function", {})
-                result = tools.run(fn.get("name"), fn.get("arguments"))
-                core.log(f"tool {fn.get('name')} -> {result[:120]!r}")
-                msgs.append({"role": "tool", "content": result, "tool_name": fn.get("name")})
+                name, args = fn.get("name", ""), fn.get("arguments") or {}
+                ch.progress(progress_text(name, args))
+                # Small results only: the local model has a 4k-token context, so a long page would overflow it.
+                result = str(self.run_local_tool(name, args, images))[:2500]
+                core.log(f"tool {name} -> {result[:120]!r}")
+                msgs.append({"role": "tool", "content": result, "tool_name": name})
+            if images:
+                msgs.append({"role": "user", "content": "Here is the screenshot of the owner's screen.", "images": images})
             # A finished action needs no second model pass on a CPU: confirm it directly (~half the wait).
             if all(c.get("function", {}).get("name") in tools.ACTIONS for c in calls):
                 done = " ".join(m["content"].replace("Added:", "Reminder set:") for m in msgs[-len(calls):])
