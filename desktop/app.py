@@ -84,11 +84,17 @@ CLOUD_TOOLS = ([t for t in tools.SPECS if t["function"]["name"] not in ("open_we
 LOCAL_TOOLS = [t for t in tools.SPECS if t["function"]["name"] not in ("open_website", "web_search")] + browser.SPECS + [SCREEN_SPEC]
 
 
+LOCAL_TEXT_LIMIT = 6000   # ~1.5k tokens: the local model's 4k context also holds the instructions and tool list
+
+
 def with_images(messages, cloud):
-    """Attach a user message's images in the shape each API expects: image_url parts for cloud, base64 for Ollama."""
+    """Attach a user message's images in the shape each API expects: image_url parts for cloud, base64 for Ollama.
+    Local mode also shortens long messages (a big PDF) so the start of the question and the file fit the context."""
     out = []
     for m in messages:
         entry = {"role": m["role"], "content": m["content"]}
+        if not cloud and m["role"] == "user" and len(m["content"]) > LOCAL_TEXT_LIMIT:
+            entry["content"] = m["content"][:LOCAL_TEXT_LIMIT] + "\n…(shortened for the local model; a cloud model reads the whole file)"
         if m["role"] == "user" and m.get("images"):
             if cloud:
                 entry["content"] = [{"type": "text", "text": m["content"]}] + [
