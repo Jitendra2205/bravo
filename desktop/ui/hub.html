@@ -146,7 +146,16 @@
   @keyframes blink { 50% { opacity: 0; } }
   @keyframes shimmer { to { background-position: -100% 0; } }
   .composer { position: sticky; bottom: 0; display: flex; gap: 10px; align-items: flex-end; padding: 10px; margin-top: 12px; background: var(--bg); }
-  .composer textarea { flex: 1; resize: none; border: 0; background: transparent; outline: none; padding: 8px; max-height: 160px; }
+  .composer { flex-wrap: wrap; }
+  .composer textarea { flex: 1; min-width: 0; resize: none; border: 0; background: transparent; outline: none; padding: 8px; max-height: 160px; }
+  .attach { flex: none; width: 40px; height: 40px; }
+  .attachments { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; padding: 0 8px; }
+  .attachments[hidden] { display: none; }
+  .chip-file { display: inline-flex; align-items: center; gap: 6px; max-width: 260px; padding: 4px 6px 4px 6px; border: 1px solid var(--edge); border-radius: 8px; font-size: 13px; }
+  .chip-file img { width: 34px; height: 34px; object-fit: cover; border-radius: 6px; }
+  .chip-file .icon-btn { width: 24px; height: 24px; font-size: 16px; }
+  .msg img.thumb { display: block; max-width: 220px; max-height: 160px; border-radius: 8px; margin-top: 6px; }
+  .att-names { font-size: 12.5px; opacity: .75; margin-top: 6px; }
   .send { width: 40px; height: 40px; border-radius: 0 10px 0 10px; border: 0; background: var(--solid); color: var(--solid-fg); display: grid; place-items: center; cursor: pointer; transition: transform .15s, opacity .2s; }
   .send:hover { transform: translateY(-1px); } .send:disabled { opacity: .4; cursor: default; transform: none; }
   #recipes-wrap h2 { margin-top: 8px; }
@@ -245,6 +254,10 @@
       <div id="recipes-wrap"><h2>Recipes</h2><div class="recipes stagger" id="recipes"></div></div>
       <form class="composer card" id="composer">
         <label for="msg" style="position:absolute;left:-9999px">Message</label>
+        <div class="attachments" id="attachments" hidden></div>
+        <button class="icon-btn attach" id="attach" type="button" aria-label="Attach images or files" title="Attach images or files">
+          <svg viewBox="0 0 24 24"><path d="M21 11.5 12.5 20a5 5 0 0 1-7-7L14 4.5a3.5 3.5 0 0 1 5 5L10.5 18a2 2 0 0 1-3-3L15 7.5"/></svg></button>
+        <input type="file" id="file" multiple accept="image/*,.txt,.md,.csv,.json,.py,.js,.ts,.html,.css,.xml,.yaml,.yml,.log" hidden>
         <textarea id="msg" rows="1" placeholder="Ask Bravo… (Enter to send, Shift+Enter for a new line)"></textarea>
         <button class="send" id="send" type="submit" aria-label="Send"><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
       </form>
@@ -530,14 +543,59 @@ $('#dict-add').addEventListener('submit', (ev) => {
 function toEnd() { const box = $('main'); box.scrollTop = box.scrollHeight; }
 function bubble(role, text) { const m = document.createElement('div'); m.className = `msg ${role}`; m.textContent = text; $('#thread').append(m); toEnd(); return m; }
 function setBusy(b) { $('#send').disabled = b; $('#msg').disabled = b; }
-async function ask(text) {
-  text = text.trim(); if (!text || streaming) return;
+// Attachments waiting to go with the next message: images (resized data URLs) or small text files.
+let pending = [];
+const TEXT_LIMIT = 60000;
+async function shrinkImage(file) {
+  const bmp = await createImageBitmap(file);
+  const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', 0.85);
+}
+$('#attach').addEventListener('click', () => $('#file').click());
+$('#file').addEventListener('change', async (ev) => {
+  for (const f of ev.target.files) {
+    if (pending.length >= 6) { toast('You can attach up to 6 files at a time'); break; }
+    try {
+      if (f.type.startsWith('image/')) pending.push({ name: f.name, kind: 'image', data: await shrinkImage(f) });
+      else if (f.size <= TEXT_LIMIT) pending.push({ name: f.name, kind: 'text', data: await f.text() });
+      else toast(`${f.name} is over 60 KB. Attach a shorter file.`);
+    } catch (e) { toast(`Could not read ${f.name}`); }
+  }
+  ev.target.value = ''; renderPending();
+});
+function renderPending() {
+  const box = $('#attachments'); box.replaceChildren(); box.hidden = !pending.length;
+  pending.forEach((p, i) => {
+    const chip = document.createElement('span'); chip.className = 'chip-file';
+    if (p.kind === 'image') { const img = document.createElement('img'); img.src = p.data; img.alt = ''; chip.append(img); }
+    chip.append(p.name);
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'icon-btn'; x.textContent = '×';
+    x.setAttribute('aria-label', 'Remove ' + p.name); x.onclick = () => { pending.splice(i, 1); renderPending(); };
+    chip.append(x); box.append(chip);
+  });
+}
+async function ask(text, files = []) {
+  text = text.trim(); if ((!text && !files.length) || streaming) return;
   show('agent'); $('#recipes-wrap').hidden = true;
-  chat.push({ role: 'user', content: text }); bubble('user', text);
+  // Text files go into the message itself; images travel alongside it.
+  const fileText = files.filter((f) => f.kind === 'text').map((f) => `\n\n[File: ${f.name}]\n${f.data}`).join('');
+  const images = files.filter((f) => f.kind === 'image').map((f) => f.data);
+  const content = (text + fileText).trim() || 'Look at the attached image.';
+  chat.push({ role: 'user', content, images });
+  const b = bubble('user', text || 'Attached');
+  files.filter((f) => f.kind === 'image').forEach((f) => { const img = document.createElement('img'); img.className = 'thumb'; img.src = f.data; img.alt = f.name; b.append(img); });
+  if (files.length) { const names = document.createElement('div'); names.className = 'att-names'; names.textContent = '📎 ' + files.map((f) => f.name).join(', '); b.append(names); }
   streaming = bubble('bot', ''); streaming.classList.add('typing'); streaming.dataset.progress = 'Thinking'; setBusy(true);
   await api().send_chat(chat);
 }
-$('#composer').addEventListener('submit', (ev) => { ev.preventDefault(); const t = $('#msg').value; $('#msg').value = ''; autosize(); ask(t); });
+$('#composer').addEventListener('submit', (ev) => {
+  ev.preventDefault(); if (streaming) return;   // keep the attachments if Bravo is still answering
+  const t = $('#msg').value; const files = pending; pending = []; renderPending();
+  $('#msg').value = ''; autosize(); ask(t, files);
+});
 $('#msg').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); $('#composer').requestSubmit(); } });
 $('#msg').addEventListener('input', autosize);
 function autosize() { const m = $('#msg'); m.style.height = 'auto'; m.style.height = Math.min(m.scrollHeight, 160) + 'px'; }

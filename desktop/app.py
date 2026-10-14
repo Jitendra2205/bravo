@@ -83,6 +83,21 @@ CLOUD_TOOLS = ([t for t in tools.SPECS if t["function"]["name"] not in ("open_we
 LOCAL_TOOLS = [t for t in tools.SPECS if t["function"]["name"] not in ("open_website", "web_search")] + browser.SPECS + [SCREEN_SPEC]
 
 
+def with_images(messages, cloud):
+    """Attach a user message's images in the shape each API expects: image_url parts for cloud, base64 for Ollama."""
+    out = []
+    for m in messages:
+        entry = {"role": m["role"], "content": m["content"]}
+        if m["role"] == "user" and m.get("images"):
+            if cloud:
+                entry["content"] = [{"type": "text", "text": m["content"]}] + [
+                    {"type": "image_url", "image_url": {"url": u}} for u in m["images"]]
+            else:
+                entry["images"] = [u.split(",", 1)[1] for u in m["images"]]
+        out.append(entry)
+    return out
+
+
 class Channel:
     """Where one agent turn talks to: the PC window or the owner's phone."""
 
@@ -554,7 +569,7 @@ class Engine:
             return reply
         if self.cloud_on():
             try:
-                return self.cloud_reply(messages, ch)
+                return self.cloud_reply(with_images(messages, cloud=True), ch)
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", "replace")[:300]
                 core.log(f"cloud HTTP {e.code}: {detail}")
@@ -568,7 +583,7 @@ class Engine:
                     e.code, f"Cloud model error {e.code}: {detail[:200]}"))
             except OSError as e:          # offline: carry on with the local model
                 core.log(f"cloud unreachable, using local: {e}")
-        msgs = [{"role": "system", "content": self.system_prompt()}] + messages
+        msgs = [{"role": "system", "content": self.system_prompt()}] + with_images(messages, cloud=False)
         reply = ""
         for _ in range(8):                 # browser tasks need several steps; capped so a CPU run stays bounded
             content, calls = "", []
@@ -830,9 +845,17 @@ class Api:
     def send_chat(self, messages):
         if not isinstance(messages, list) or not messages:
             return False
-        clean = [{"role": m["role"], "content": str(m["content"])} for m in messages
-                 if isinstance(m, dict) and m.get("role") in ("user", "assistant")]
-        threading.Thread(target=self._e.chat, args=(clean[-20:],), daemon=True).start()
+        valid = [m for m in messages if isinstance(m, dict) and m.get("role") in ("user", "assistant")][-20:]
+        last_user = max((i for i, m in enumerate(valid) if m["role"] == "user"), default=-1)
+        clean = []
+        for i, m in enumerate(valid):
+            entry = {"role": m["role"], "content": str(m["content"])}
+            # Images only travel with the newest user message; older screenshots would be re-sent every turn.
+            imgs = [u for u in (m.get("images") or []) if isinstance(u, str) and u.startswith("data:image/")][:6] if i == last_user else []
+            if imgs:
+                entry["images"] = imgs
+            clean.append(entry)
+        threading.Thread(target=self._e.chat, args=(clean,), daemon=True).start()
         return True
 
     def connect_google(self):
