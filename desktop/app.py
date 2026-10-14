@@ -39,6 +39,7 @@ try:
 
     import browser
     import core
+    import documents
     import integrations
     import telegram
     import tools
@@ -857,6 +858,12 @@ class Api:
             clean.append(entry)
         threading.Thread(target=self._e.chat, args=(clean,), daemon=True).start()
         return True
+
+    def extract_document(self, name, data_url):
+        """Text of an attached PDF or Word file; the chat adds it like a text file."""
+        if not str(data_url).startswith("data:application/"):
+            return f"(could not read {name})"
+        return documents.extract(str(name), str(data_url))
 
     def connect_google(self):
         s = self._e.settings

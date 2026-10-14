@@ -8,7 +8,7 @@ datas = [(os.path.join(here, "ui"), "ui"),
          (os.path.join(here, "..", "skills", "daily-brief", "brief.py"), os.path.join("skills", "daily-brief"))]
 binaries, hiddenimports = [], []
 # Packages with DLLs, model assets or a bundled driver that static analysis alone misses.
-for pkg in ("faster_whisper", "ctranslate2", "onnxruntime", "webview", "playwright", "edge_tts"):
+for pkg in ("faster_whisper", "ctranslate2", "onnxruntime", "webview", "playwright", "edge_tts", "pypdf", "docx"):
     d, b, h = collect_all(pkg)
     datas += d
     binaries += b
